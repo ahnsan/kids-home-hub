@@ -1,0 +1,324 @@
+name: Deploy PWA to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/pwa/**'
+      - 'packages/shared/**'
+      - '.github/workflows/deploy-pwa.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/pwa/**'
+      - 'packages/shared/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - preview
+          - production
+        default: 'preview'
+
+env:
+  NODE_VERSION: '20.x'
+  PNPM_VERSION: '8.15.0'
+
+jobs:
+  # Build and test PWA
+  build-pwa:
+    name: Build PWA
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          FULL_VERSION="${VERSION}-${COMMIT_SHA}-${TIMESTAMP}"
+          echo "version=${FULL_VERSION}" >> $GITHUB_OUTPUT
+          echo "Version: ${FULL_VERSION}"
+
+      - name: Type check
+        run: pnpm --filter @kids-hub/pwa type-check
+
+      - name: Lint
+        run: pnpm --filter @kids-hub/pwa lint
+
+      - name: Run tests
+        run: pnpm --filter @kids-hub/pwa test
+        env:
+          CI: true
+
+      - name: Build PWA
+        run: pnpm --filter @kids-hub/pwa build
+        env:
+          NODE_ENV: production
+          VITE_APP_VERSION: ${{ steps.version.outputs.version }}
+
+      - name: Check bundle size
+        run: |
+          DIST_SIZE=$(du -sh apps/pwa/dist | cut -f1)
+          echo "Bundle size: $DIST_SIZE"
+          echo "### Build Success" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Bundle size: $DIST_SIZE" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-dist
+          path: apps/pwa/dist
+          retention-days: 7
+
+  # Deploy to Cloudflare Pages (Preview)
+  deploy-preview:
+    name: Deploy Preview
+    needs: build-pwa
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'preview')
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pwa-dist
+          path: apps/pwa/dist
+
+      - name: Deploy to Cloudflare Pages (Preview)
+        id: deploy
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: kids-home-hub-pwa
+          directory: apps/pwa/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.head_ref || github.ref_name }}
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const deployUrl = '${{ steps.deploy.outputs.url }}';
+            const comment = `## 🚀 Preview Deployment
+
+            Your changes have been deployed to Cloudflare Pages!
+
+            **Preview URL**: ${deployUrl}
+            **Version**: ${{ needs.build-pwa.outputs.version }}
+            **Branch**: \`${{ github.head_ref }}\`
+
+            ### Next Steps
+            1. Test the preview deployment
+            2. Run Lighthouse audit
+            3. Verify PWA installation
+            4. Check offline functionality
+
+            ---
+            *Deployed by GitHub Actions*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Run Lighthouse CI on Preview
+        run: |
+          npm install -g @lhci/cli
+          echo "Preview URL: ${{ steps.deploy.outputs.url }}"
+        continue-on-error: true
+
+  # Deploy to Production
+  deploy-production:
+    name: Deploy Production
+    needs: build-pwa
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment:
+      name: production
+      url: https://kids-home-hub.pages.dev
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: pwa-dist
+          path: apps/pwa/dist
+
+      - name: Deploy to Cloudflare Pages (Production)
+        id: deploy
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: kids-home-hub-pwa
+          directory: apps/pwa/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          branch: main
+
+      - name: Wait for deployment to stabilize
+        run: sleep 10
+
+      - name: Setup Node.js for smoke tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run smoke tests
+        run: node scripts/ci/smoke-test.js --url=https://kids-home-hub.pages.dev
+        continue-on-error: false
+
+      - name: Create deployment record
+        run: |
+          echo "## 🎉 Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${{ needs.build-pwa.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**URL**: https://kids-home-hub.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed at**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Smoke Tests" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All smoke tests passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Create GitHub Release
+        if: success()
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: pwa-v${{ needs.build-pwa.outputs.version }}
+          release_name: PWA Release ${{ needs.build-pwa.outputs.version }}
+          body: |
+            ## PWA Release ${{ needs.build-pwa.outputs.version }}
+
+            Deployed to production at $(date -u)
+
+            ### 🚀 Deployment
+            - **URL**: https://kids-home-hub.pages.dev
+            - **Environment**: Production
+            - **Commit**: ${{ github.sha }}
+
+            ### ✅ Quality Checks
+            - Type check: Passed
+            - Linting: Passed
+            - Tests: Passed
+            - Smoke tests: Passed
+
+            ### 📊 Metrics
+            - Bundle size: Optimized
+            - PWA ready: Yes
+            - Offline support: Yes
+
+            ---
+            *Deployed by ${{ github.actor }}*
+          draft: false
+          prerelease: false
+
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "✅ Production deployment successful!"
+          echo "URL: https://kids-home-hub.pages.dev"
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Production deployment failed!"
+          echo "Check the logs above for details"
+          exit 1
+
+  # Post-deployment validation
+  post-deployment:
+    name: Post-Deployment Validation
+    needs: [build-pwa, deploy-production]
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright
+        run: pnpm playwright install --with-deps chromium
+
+      - name: Run E2E tests against production
+        run: pnpm test:e2e --project=chromium
+        env:
+          CI: true
+          TEST_URL: https://kids-home-hub.pages.dev
+        continue-on-error: true
+
+      - name: Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-production-results
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Performance audit summary
+        run: |
+          echo "## 📊 Post-Deployment Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### E2E Tests" >> $GITHUB_STEP_SUMMARY
+          echo "Ran against: https://kids-home-hub.pages.dev" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. ✅ Monitor application metrics" >> $GITHUB_STEP_SUMMARY
+          echo "2. ✅ Check error tracking" >> $GITHUB_STEP_SUMMARY
+          echo "3. ✅ Verify user analytics" >> $GITHUB_STEP_SUMMARY

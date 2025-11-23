@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#6366f1">
+  <title>Service Worker Integration Example - Kids Home Hub</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    }
+
+    h1 {
+      margin-bottom: 30px;
+      font-size: 32px;
+    }
+
+    .status-grid {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .status-card {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .status-icon {
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .status-content {
+      flex: 1;
+    }
+
+    .status-label {
+      font-size: 14px;
+      opacity: 0.8;
+      margin-bottom: 4px;
+    }
+
+    .status-value {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      padding: 16px 24px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    .log {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border-radius: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .log-entry {
+      margin-bottom: 8px;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .log-info {
+      background: rgba(59, 130, 246, 0.2);
+    }
+
+    .log-success {
+      background: rgba(34, 197, 94, 0.2);
+    }
+
+    .log-error {
+      background: rgba(239, 68, 68, 0.2);
+    }
+
+    .log-warning {
+      background: rgba(251, 191, 36, 0.2);
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .form-group input::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .online-indicator {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .offline-indicator {
+      background: #ef4444;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Service Worker Integration Example</h1>
+
+    <!-- Status Cards -->
+    <div class="status-grid">
+      <div class="status-card">
+        <div class="status-icon">📡</div>
+        <div class="status-content">
+          <div class="status-label">Connection Status</div>
+          <div class="status-value">
+            <span id="connectionStatus">Checking...</span>
+            <span class="online-indicator" id="connectionIndicator"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="status-card">
+        <div class="status-icon">⚙️</div>
+        <div class="status-content">
+          <div class="status-label">Service Worker</div>
+          <div class="status-value" id="swStatus">Not registered</div>
+        </div>
+      </div>
+
+      <div class="status-card">
+        <div class="status-icon">🔄</div>
+        <div class="status-content">
+          <div class="status-label">Pending Sync</div>
+          <div class="status-value" id="pendingSync">0 items</div>
+        </div>
+      </div>
+
+      <div class="status-card">
+        <div class="status-icon">💾</div>
+        <div class="status-content">
+          <div class="status-label">Database</div>
+          <div class="status-value" id="dbStatus">Not initialized</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Actions -->
+    <h2 style="margin-bottom: 16px;">Test Actions</h2>
+    <div class="action-grid">
+      <button class="btn" onclick="testAddTransaction()">Add Transaction</button>
+      <button class="btn" onclick="testAddChore()">Add Chore</button>
+      <button class="btn" onclick="testTriggerSync()">Trigger Sync</button>
+      <button class="btn" onclick="testGoOffline()">Simulate Offline</button>
+      <button class="btn" onclick="testClearCache()">Clear Cache</button>
+      <button class="btn" onclick="testExportData()">Export Data</button>
+    </div>
+
+    <!-- Activity Log -->
+    <h2 style="margin-bottom: 16px;">Activity Log</h2>
+    <div class="log" id="activityLog">
+      <div class="log-entry log-info">Initializing...</div>
+    </div>
+  </div>
+
+  <!-- Include Service Worker Registration -->
+  <script type="module">
+    // This example shows how to integrate the service worker components
+    // In production, you would import these as ES modules
+
+    import swManager from './sw-registration.js';
+    import db from './db.js';
+
+    // ========================================================================
+    // INITIALIZATION
+    // ========================================================================
+
+    async function init() {
+      log('Initializing Kids Home Hub...', 'info');
+
+      // Initialize database
+      try {
+        await db.initialize();
+        log('Database initialized successfully', 'success');
+        document.getElementById('dbStatus').textContent = 'Ready';
+        updatePendingSync();
+      } catch (error) {
+        log(`Database initialization failed: ${error.message}`, 'error');
+        document.getElementById('dbStatus').textContent = 'Error';
+      }
+
+      // Initialize service worker
+      try {
+        const registered = await swManager.init();
+        if (registered) {
+          log('Service Worker registered successfully', 'success');
+          document.getElementById('swStatus').textContent = 'Active';
+
+          // Get version
+          const version = await swManager.getVersion();
+          if (version) {
+            log(`Service Worker version: ${version}`, 'info');
+          }
+        } else {
+          log('Service Worker not supported', 'warning');
+          document.getElementById('swStatus').textContent = 'Not supported';
+        }
+      } catch (error) {
+        log(`Service Worker registration failed: ${error.message}`, 'error');
+        document.getElementById('swStatus').textContent = 'Error';
+      }
+
+      // Setup event listeners
+      setupEventListeners();
+
+      // Update connection status
+      updateConnectionStatus();
+
+      log('Initialization complete!', 'success');
+    }
+
+    // ========================================================================
+    // EVENT LISTENERS
+    // ========================================================================
+
+    function setupEventListeners() {
+      // Connection status
+      window.addEventListener('online', () => {
+        log('Connection restored!', 'success');
+        updateConnectionStatus();
+      });
+
+      window.addEventListener('offline', () => {
+        log('Connection lost - working offline', 'warning');
+        updateConnectionStatus();
+      });
+
+      // Service Worker events
+      swManager.on('sync-success', (data) => {
+        log('Background sync completed', 'success');
+        updatePendingSync();
+      });
+
+      swManager.on('sync-failed', (data) => {
+        log(`Sync failed: ${data.error}`, 'error');
+      });
+
+      swManager.on('update-available', ({ type, version }) => {
+        log(`Update available: ${type} - ${version}`, 'info');
+      });
+
+      swManager.on('activated', ({ version }) => {
+        log(`New service worker activated: ${version}`, 'success');
+      });
+
+      swManager.on('process-queue', () => {
+        log('Processing sync queue...', 'info');
+        processSyncQueue();
+      });
+    }
+
+    // ========================================================================
+    // TEST FUNCTIONS
+    // ========================================================================
+
+    window.testAddTransaction = async function() {
+      try {
+        log('Adding test transaction...', 'info');
+
+        const transaction = await db.addTransaction({
+          childId: 'adam',
+          type: 'money',
+          action: 'add',
+          amount: 5.00,
+          currency: 'GBP',
+          reason: 'Test transaction',
+          timestamp: new Date().toISOString(),
+        });
+
+        log(`Transaction added: ${transaction.id}`, 'success');
+        updatePendingSync();
+
+        // Trigger sync if online
+        if (navigator.onLine) {
+          await swManager.triggerSync();
+        }
+      } catch (error) {
+        log(`Failed to add transaction: ${error.message}`, 'error');
+      }
+    };
+
+    window.testAddChore = async function() {
+      try {
+        log('Adding test chore...', 'info');
+
+        const chore = await db.addChore({
+          childId: 'sami',
+          chores: [
+            { id: 'tidy_room', label: 'Tidy bedroom', points: 10 }
+          ],
+          totalPoints: 10,
+          timestamp: new Date().toISOString(),
+        });
+
+        log(`Chore added: ${chore.id}`, 'success');
+        updatePendingSync();
+
+        if (navigator.onLine) {
+          await swManager.triggerSync();
+        }
+      } catch (error) {
+        log(`Failed to add chore: ${error.message}`, 'error');
+      }
+    };
+
+    window.testTriggerSync = async function() {
+      try {
+        log('Triggering manual sync...', 'info');
+        await swManager.triggerSync();
+        log('Sync triggered', 'success');
+      } catch (error) {
+        log(`Sync trigger failed: ${error.message}`, 'error');
+      }
+    };
+
+    window.testGoOffline = function() {
+      log('Simulating offline mode...', 'warning');
+      log('Open DevTools → Network → Select "Offline"', 'info');
+    };
+
+    window.testClearCache = async function() {
+      if (confirm('Clear all caches? This will remove offline data.')) {
+        try {
+          log('Clearing caches...', 'info');
+          await swManager.clearCaches();
+          log('Caches cleared successfully', 'success');
+        } catch (error) {
+          log(`Failed to clear caches: ${error.message}`, 'error');
+        }
+      }
+    };
+
+    window.testExportData = async function() {
+      try {
+        log('Exporting database...', 'info');
+        const data = await db.exportData();
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: 'application/json'
+        });
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `kids-hub-backup-${Date.now()}.json`;
+        a.click();
+
+        log('Database exported successfully', 'success');
+      } catch (error) {
+        log(`Export failed: ${error.message}`, 'error');
+      }
+    };
+
+    // ========================================================================
+    // SYNC PROCESSING
+    // ========================================================================
+
+    async function processSyncQueue() {
+      try {
+        const pendingItems = await db.getPendingSyncItems(10);
+
+        if (pendingItems.length === 0) {
+          log('No pending items to sync', 'info');
+          return;
+        }
+
+        log(`Processing ${pendingItems.length} pending items...`, 'info');
+
+        for (const item of pendingItems) {
+          try {
+            // Simulate API call
+            const response = await fetch(`/${item.entityType}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Sync-Id': item.id,
+                'X-Device-Id': await db.getDeviceId(),
+              },
+              body: JSON.stringify(item.data),
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              await db.markSynced(item.id, result);
+              log(`Synced: ${item.entityType} ${item.entityId}`, 'success');
+            } else {
+              throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+          } catch (error) {
+            await db.markSyncFailed(item.id, error);
+            log(`Sync failed: ${item.entityId} - ${error.message}`, 'error');
+          }
+        }
+
+        updatePendingSync();
+      } catch (error) {
+        log(`Queue processing error: ${error.message}`, 'error');
+      }
+    }
+
+    // ========================================================================
+    // UI UPDATES
+    // ========================================================================
+
+    function updateConnectionStatus() {
+      const statusEl = document.getElementById('connectionStatus');
+      const indicatorEl = document.getElementById('connectionIndicator');
+
+      if (navigator.onLine) {
+        statusEl.textContent = 'Online';
+        indicatorEl.classList.remove('offline-indicator');
+      } else {
+        statusEl.textContent = 'Offline';
+        indicatorEl.classList.add('offline-indicator');
+      }
+    }
+
+    async function updatePendingSync() {
+      try {
+        const count = await db.getPendingChangesCount();
+        const pendingSyncEl = document.getElementById('pendingSync');
+        pendingSyncEl.textContent = `${count} item${count === 1 ? '' : 's'}`;
+      } catch (error) {
+        console.error('Failed to update pending sync count:', error);
+      }
+    }
+
+    function log(message, type = 'info') {
+      const logEl = document.getElementById('activityLog');
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+
+      const timestamp = new Date().toLocaleTimeString();
+      entry.textContent = `[${timestamp}] ${message}`;
+
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+
+      console.log(`[${type.toUpperCase()}] ${message}`);
+    }
+
+    // ========================================================================
+    // START
+    // ========================================================================
+
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
+    }
+
+    // Update pending sync every 30 seconds
+    setInterval(updatePendingSync, 30000);
+  </script>
+</body>
+</html>

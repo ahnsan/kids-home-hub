@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": false,
+    "declarationMap": false
+  },
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./apps/frontend" },
+    { "path": "./apps/backend" }
+  ],
+  "files": [],
+  "include": [],
+  "exclude": ["node_modules", "dist", "build", ".turbo", ".wrangler"]
+}

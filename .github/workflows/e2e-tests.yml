@@ -1,0 +1,223 @@
+name: E2E Tests
+
+on:
+  # Run on pull requests
+  pull_request:
+    branches:
+      - main
+      - develop
+
+  # Run on push to main branches
+  push:
+    branches:
+      - main
+      - develop
+
+  # Run before deployments
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to test against'
+        required: false
+        type: string
+        default: 'staging'
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: 'Browser to test'
+        required: false
+        type: choice
+        options:
+          - all
+          - chromium
+          - firefox
+          - webkit
+        default: 'all'
+
+jobs:
+  e2e-tests:
+    name: E2E Tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # Test on multiple browsers
+        browser:
+          - chromium
+          - firefox
+          - webkit
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Build PWA
+        run: pnpm --filter @kids-hub/pwa build
+
+      - name: Run E2E tests
+        run: pnpm test:e2e --project=${{ matrix.browser }}
+        env:
+          CI: true
+          TEST_URL: ${{ inputs.environment == 'production' && 'https://kids-home-hub.pages.dev' || 'http://localhost:3000' }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.browser }}
+          path: test-results/
+          retention-days: 7
+
+  # Mobile device tests (run separately to avoid excessive parallel jobs)
+  e2e-mobile-tests:
+    name: E2E Mobile Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm playwright install --with-deps chromium webkit
+
+      - name: Build PWA
+        run: pnpm --filter @kids-hub/pwa build
+
+      - name: Run Mobile Chrome tests
+        run: pnpm test:e2e --project="Mobile Chrome"
+        env:
+          CI: true
+
+      - name: Run Mobile Safari tests
+        run: pnpm test:e2e --project="Mobile Safari"
+        env:
+          CI: true
+
+      - name: Upload mobile test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-mobile
+          path: playwright-report/
+          retention-days: 30
+
+  # Aggregate results and report
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [e2e-tests, e2e-mobile-tests]
+    if: always()
+
+    steps:
+      - name: Download all reports
+        uses: actions/download-artifact@v4
+        with:
+          path: all-reports
+
+      - name: Merge reports (if needed)
+        run: |
+          echo "All E2E tests completed"
+          echo "Check individual job results for details"
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const conclusion = '${{ needs.e2e-tests.result }}' === 'success' && '${{ needs.e2e-mobile-tests.result }}' === 'success' ? '✅' : '❌';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ${conclusion} E2E Test Results\n\n` +
+                    `- Desktop browsers: ${{ needs.e2e-tests.result }}\n` +
+                    `- Mobile browsers: ${{ needs.e2e-mobile-tests.result }}\n\n` +
+                    `View detailed results in the [Actions tab](${context.payload.pull_request.html_url}/checks)`
+            });
+
+  # Pre-deployment smoke tests
+  pre-deployment-smoke:
+    name: Pre-Deployment Smoke Tests
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_call'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright
+        run: pnpm playwright install --with-deps chromium
+
+      - name: Build PWA
+        run: pnpm --filter @kids-hub/pwa build
+
+      - name: Run smoke tests
+        run: pnpm test:e2e --grep "@smoke"
+        env:
+          CI: true
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "❌ Smoke tests failed! Deployment should be blocked."
+          exit 1

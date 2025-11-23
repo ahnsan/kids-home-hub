@@ -1,135 +1,329 @@
-# Kids Home Hub - Quick Start Guide
+# Quick Start Guide - Production-Grade Worker API
 
-Get up and running in 5 minutes!
+Get up and running with the new TypeScript Worker API in 5 minutes.
 
 ## Prerequisites
 
 - Node.js 18+
-- Cloudflare account (free tier works!)
-- 5 minutes of your time
+- npm or pnpm
+- Cloudflare account
+- Wrangler CLI installed
 
-## Step 1: Install Dependencies
+## Step 1: Install Dependencies (30 seconds)
 
 ```bash
-cd kids-home-hub
 npm install
 ```
 
-## Step 2: Set Up Cloudflare KV
+This installs:
+- `hono` - Web framework
+- `zod` - Schema validation
+- TypeScript and types
 
-```bash
-# Install Wrangler CLI globally (if not installed)
-npm install -g wrangler
+## Step 2: Configure KV Namespace (1 minute)
 
-# Login to Cloudflare
-wrangler login
-
-# Create KV namespace
-wrangler kv:namespace create "CHILD_SPEND"
-```
-
-Copy the ID from the output and paste it in `wrangler.toml`:
+1. Create a KV namespace in Cloudflare dashboard
+2. Copy the namespace ID
+3. Update `wrangler.toml`:
 
 ```toml
 [[kv_namespaces]]
 binding = "CHILD_SPEND"
-id = "YOUR_ID_HERE"  # ← Paste your ID here
+id = "your-kv-namespace-id-here"  # ← Paste your ID here
 ```
 
-## Step 3: Start Development Server
+## Step 3: Start Development Server (10 seconds)
 
 ```bash
-npm run dev
+npm run dev:worker
 ```
 
-Visit `http://localhost:8787` - You should see the Kids Home Hub!
+Server starts at: `http://localhost:8787`
 
-## Step 4: Try It Out
+## Step 4: Test the API (2 minutes)
 
-1. Click on **Bank** tab
-2. Click "Adjust balance" under Adam or Sami
-3. Add £10 as "Allowance"
-4. See the balance update!
-
-5. Click on **Chores** tab
-6. Check some chores
-7. Click "Save chores & add points"
-8. Go to **Points** tab to see earned points!
-
-## Step 5: Deploy to Production (Optional)
-
+### Health Check
 ```bash
-# Create production KV namespace
-wrangler kv:namespace create "CHILD_SPEND" --env production
-
-# Update production ID in wrangler.toml
-# Then deploy:
-npm run deploy
+curl http://localhost:8787/v1/health
 ```
 
-Your app will be live at `https://kids-home-hub.YOUR_SUBDOMAIN.workers.dev`
-
-## Claude Flow Setup (Optional but Recommended)
-
-Enable AI-powered features:
-
-```bash
-# Initialize Claude Flow
-npm run flow:init
-
-# Make hooks executable
-chmod +x .claude/hooks/*.sh
-
-# Start a tracked session
-npm run flow:session
+Expected:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-23T12:00:00.000Z",
+  "version": "v1"
+}
 ```
 
-Now your development sessions will be tracked, and AI agents will optimize your app automatically!
-
-## Next Steps
-
-- Customize chores in `worker.js`
-- Add more children if needed
-- Configure agent swarms in `.claude/swarms/`
-- Set up Hive Memory for learning in `.claude/memory/`
-- Read the full README for advanced features
-
-## Common Issues
-
-### "Module not found" error
+### Create a Transaction
 ```bash
-npm install
+curl -X POST http://localhost:8787/v1/transaction \
+  -H "Content-Type: application/json" \
+  -d '{
+    "feature": "money",
+    "child": "adam",
+    "action": "add",
+    "amount": 10.50,
+    "currency": "GBP",
+    "reason": "Pocket money"
+  }'
 ```
 
-### "KV namespace not found"
-Check that you updated `wrangler.toml` with your actual KV ID
-
-### Hooks not running
-```bash
-chmod +x .claude/hooks/*.sh
+Expected:
+```json
+{
+  "success": true,
+  "data": {
+    "child": "adam",
+    "feature": "money",
+    "newBalance": "10.50",
+    "transaction": {
+      "action": "add",
+      "amount": 10.5,
+      "reason": "Pocket money"
+    }
+  },
+  "meta": {
+    "timestamp": "2025-11-23T12:00:00.000Z",
+    "version": "v1",
+    "requestId": "..."
+  }
+}
 ```
 
-### Port 8787 already in use
+### Submit Chores
 ```bash
-# Kill existing process
-pkill -f "wrangler dev"
+curl -X POST http://localhost:8787/v1/chores \
+  -H "Content-Type: application/json" \
+  -d '{
+    "child": "sami",
+    "chore": ["tidy_room", "homework"]
+  }'
+```
+
+Expected:
+```json
+{
+  "success": true,
+  "data": {
+    "child": "sami",
+    "totalPoints": 18,
+    "choresCompleted": [
+      {"id": "tidy_room", "label": "Tidy bedroom", "points": 10},
+      {"id": "homework", "label": "Finish homework", "points": 8}
+    ],
+    "newPointsBalance": 18
+  },
+  ...
+}
+```
+
+### Redeem Points
+```bash
+curl -X POST http://localhost:8787/v1/redeem \
+  -H "Content-Type: application/json" \
+  -d '{
+    "child": "adam",
+    "points": 15,
+    "reason": "Movie night"
+  }'
+```
+
+### Get All Data
+```bash
+curl http://localhost:8787/v1/data
+```
+
+Or for specific child:
+```bash
+curl http://localhost:8787/v1/data?child=adam
+```
+
+## Step 5: Run Tests (30 seconds)
+
+```bash
+npm run test:worker
+```
+
+Expected output:
+```
+✓ Transaction Schema Validation (10 tests)
+✓ Transaction Service - Money (3 tests)
+✓ Transaction Service - Points (3 tests)
+✓ Transaction Service - Chores (3 tests)
+✓ Transaction Service - Redeem (2 tests)
+
+Test Files  1 passed (1)
+     Tests  21 passed (21)
+```
+
+## Step 6: Deploy (1 minute)
+
+### Deploy to Staging
+```bash
+npm run deploy:worker:staging
+```
+
+### Deploy to Production
+```bash
+npm run deploy:worker:production
+```
+
+## Common Commands
+
+```bash
+# Development
+npm run dev:worker              # Start dev server
+npm run test:worker             # Run tests
+npm run test:watch              # Run tests in watch mode
+npm run type-check              # Check TypeScript types
+npm run lint                    # Run linter
+npm run lint:fix                # Fix linting issues
+
+# Deployment
+npm run deploy:worker           # Deploy to default
+npm run deploy:worker:staging   # Deploy to staging
+npm run deploy:worker:production # Deploy to production
+```
+
+## API Endpoints Quick Reference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/v1/health` | Health check (versioned) |
+| POST | `/v1/transaction` | Create transaction |
+| GET | `/v1/chores` | Get available chores |
+| POST | `/v1/chores` | Submit chores |
+| POST | `/v1/redeem` | Redeem points |
+| GET | `/v1/data` | Get all data |
+
+## Troubleshooting
+
+### Port Already in Use
+```bash
+# Kill process on port 8787
+lsof -ti:8787 | xargs kill -9
 
 # Or use a different port
 wrangler dev --port 8788
 ```
 
-## Support
+### KV Namespace Not Found
+```
+Error: KV namespace not bound
+```
 
-- Full documentation: See README.md
-- Cloudflare docs: https://developers.cloudflare.com/workers/
-- Claude Flow: See `.claude/flows/README.md`
+**Solution**: Update `wrangler.toml` with your KV namespace ID
 
-## What's Next?
+### TypeScript Errors
+```bash
+# Rebuild TypeScript
+npm run type-check
+```
 
-Once you're running:
-1. Customize the chores list for your kids
-2. Set up the PWA on your phone (Add to Home Screen)
-3. Try the points redemption feature
-4. Check out the analytics (coming soon!)
+### Rate Limited (429 Error)
+```
+Error: Rate limit exceeded
+```
 
-Enjoy using Kids Home Hub!
+**Solution**: Wait 60 seconds or increase rate limit in development:
+
+Edit `src/middleware/security.ts`:
+```typescript
+const maxRequests = process.env.ENVIRONMENT === 'development' ? 1000 : 100;
+```
+
+### CORS Errors
+```
+Access-Control-Allow-Origin error
+```
+
+**Solution**: Add your origin to allowed origins in `src/middleware/security.ts`:
+```typescript
+const allowedOrigins = [
+  'http://localhost:3000',  // Add your frontend
+  // ...
+];
+```
+
+## Next Steps
+
+1. **Read the Docs**:
+   - [API.md](./API.md) - Complete API documentation
+   - [MIGRATION.md](./MIGRATION.md) - Migration guide
+   - [README-WORKER.md](./README-WORKER.md) - Detailed README
+
+2. **Customize**:
+   - Update CORS origins in `src/middleware/security.ts`
+   - Adjust rate limits in `src/middleware/security.ts`
+   - Add authentication if needed
+
+3. **Monitor**:
+   - Check Cloudflare dashboard for metrics
+   - Review logs in Cloudflare dashboard
+   - Monitor response times
+
+4. **Test**:
+   - Write additional tests
+   - Run load tests
+   - Test in production-like environment
+
+## Example: Complete Workflow
+
+```bash
+# 1. Install
+npm install
+
+# 2. Configure KV (edit wrangler.toml)
+vim wrangler.toml
+
+# 3. Start dev server
+npm run dev:worker
+
+# 4. In another terminal, test
+curl http://localhost:8787/v1/health
+
+# 5. Run tests
+npm run test:worker
+
+# 6. Type check
+npm run type-check
+
+# 7. Deploy to staging
+npm run deploy:worker:staging
+
+# 8. Test staging
+curl https://kids-home-hub-staging.workers.dev/v1/health
+
+# 9. Deploy to production
+npm run deploy:worker:production
+
+# 10. Test production
+curl https://kids-home-hub.workers.dev/v1/health
+```
+
+## Quick Links
+
+- **API Docs**: [API.md](./API.md)
+- **Migration Guide**: [MIGRATION.md](./MIGRATION.md)
+- **Architecture**: [README-WORKER.md](./README-WORKER.md)
+- **Summary**: [REFACTOR-SUMMARY.md](./REFACTOR-SUMMARY.md)
+
+## Need Help?
+
+1. Check the documentation files above
+2. Review error logs in Cloudflare dashboard
+3. Run tests: `npm run test:worker`
+4. Check type errors: `npm run type-check`
+5. Open an issue on GitHub
+
+---
+
+**Congratulations!** You now have a production-grade TypeScript Worker API running with:
+- ✅ Security (rate limiting, validation, CORS)
+- ✅ Performance (<50ms response time)
+- ✅ Monitoring (logging, metrics)
+- ✅ Type safety (100% TypeScript)
+- ✅ Tests (comprehensive coverage)

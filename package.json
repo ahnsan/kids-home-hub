@@ -1,30 +1,113 @@
 {
   "name": "kids-home-hub",
-  "version": "1.0.0",
-  "description": "Kids Home Hub PWA with Claude Flow, Hive Memory & Agent Swarms",
-  "main": "worker.js",
-  "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "flow:init": "npx claude-flow@alpha init",
-    "flow:session": "npx claude-flow@alpha session start",
-    "flow:metrics": "npx claude-flow@alpha metrics --export",
-    "test": "vitest"
-  },
-  "keywords": [
-    "cloudflare-workers",
-    "pwa",
-    "claude-flow",
-    "ai-agents"
-  ],
+  "version": "2.0.0",
+  "private": true,
+  "description": "Enterprise-grade PWA for managing children's chores, rewards, screen time, and pocket money",
+  "type": "module",
   "author": "",
   "license": "MIT",
-  "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241127.0",
-    "wrangler": "^3.94.0",
-    "vitest": "^2.1.8"
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
   },
-  "dependencies": {
-    "claude-flow": "alpha"
-  }
+  "packageManager": "pnpm@8.15.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/**\" dev",
+    "dev:frontend": "pnpm --filter @kids-home-hub/frontend dev",
+    "dev:backend": "pnpm --filter @kids-home-hub/backend dev",
+    "dev:worker": "wrangler dev src/index.ts",
+    "build": "pnpm --recursive --filter \"./packages/**\" build && pnpm --recursive --filter \"./apps/**\" build",
+    "build:frontend": "pnpm --filter @kids-home-hub/shared build && pnpm --filter @kids-home-hub/frontend build",
+    "build:backend": "pnpm --filter @kids-home-hub/shared build && pnpm --filter @kids-home-hub/backend build",
+    "build:analyze": "pnpm build && node scripts/ci/bundle-check.js",
+    "preview": "pnpm --filter @kids-home-hub/frontend preview",
+    "test": "vitest run",
+    "test:worker": "vitest run src/__tests__",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "test:coverage:check": "vitest run --coverage --coverage.thresholds.lines=80 --coverage.thresholds.functions=80 --coverage.thresholds.branches=80 --coverage.thresholds.statements=80",
+    "test:integration": "vitest run --config vitest.integration.config.js",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:smoke": "playwright test --grep @smoke",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:firefox": "playwright test --project=firefox",
+    "test:e2e:webkit": "playwright test --project=webkit",
+    "test:e2e:mobile": "playwright test --project='Mobile Chrome' --project='Mobile Safari'",
+    "test:smoke": "node scripts/ci/smoke-test.js",
+    "lint": "eslint . --ext .js,.ts,.tsx --max-warnings 0",
+    "lint:fix": "eslint . --ext .js,.ts,.tsx --fix",
+    "lint:report": "eslint . --ext .js,.ts,.tsx --format json --output-file eslint-report.json",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,scss}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css,scss}\"",
+    "type-check": "tsc --noEmit",
+    "clean": "pnpm --recursive clean && rm -rf node_modules dist build .turbo .wrangler coverage test-results playwright-report",
+    "prepare": "husky install",
+    "deploy": "pnpm build && pnpm deploy:backend",
+    "deploy:frontend": "pnpm --filter @kids-home-hub/frontend deploy",
+    "deploy:backend": "pnpm --filter @kids-home-hub/backend deploy",
+    "deploy:worker": "wrangler deploy",
+    "deploy:worker:staging": "wrangler deploy --env staging",
+    "deploy:worker:production": "wrangler deploy --env production",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:production": "wrangler deploy --env production",
+    "docs:api": "typedoc --options typedoc.json",
+    "security:audit": "npm audit --audit-level moderate",
+    "security:snyk": "snyk test --severity-threshold=high",
+    "validate": "pnpm run format:check && pnpm run lint && pnpm run type-check && pnpm run test",
+    "bundle:analyze": "node scripts/ci/bundle-check.js",
+    "bundle:check": "node scripts/ci/bundle-check.js",
+    "backup:create": "node scripts/ci/deployment-backup.js",
+    "deployment:rollback": "node scripts/ci/deployment-rollback.js",
+    "profile:memory": "node --expose-gc --inspect scripts/ci/memory-profile.js"
+  },
+  "devDependencies": {
+    "@lhci/cli": "^0.13.0",
+    "@playwright/test": "^1.40.1",
+    "@types/node": "^20.10.6",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vitest/coverage-v8": "^1.1.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-security": "^2.1.0",
+    "husky": "^8.0.3",
+    "license-checker": "^25.0.1",
+    "lint-staged": "^15.2.0",
+    "playwright": "^1.40.1",
+    "prettier": "^3.1.1",
+    "size-limit": "^11.0.1",
+    "snyk": "^1.1274.0",
+    "typedoc": "^0.25.6",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0",
+    "wrangler": "^3.22.1"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css,scss}": [
+      "prettier --write"
+    ]
+  },
+  "keywords": [
+    "pwa",
+    "progressive-web-app",
+    "cloudflare-workers",
+    "preact",
+    "typescript",
+    "offline-first",
+    "kids",
+    "chores",
+    "rewards",
+    "family"
+  ]
 }

@@ -1,0 +1,371 @@
+name: CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      skip_tests:
+        description: 'Skip tests (emergency only)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  prepare:
+    name: Prepare Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine environment
+        id: set-env
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          FULL_VERSION="${VERSION}-${COMMIT_SHA}-${TIMESTAMP}"
+          echo "version=${FULL_VERSION}" >> $GITHUB_OUTPUT
+          echo "Version: ${FULL_VERSION}"
+
+  quality-check:
+    name: Quality Check
+    needs: prepare
+    if: github.event.inputs.skip_tests != 'true'
+    uses: ./.github/workflows/ci.yml
+
+  build-production:
+    name: Build for Production
+    needs: [prepare, quality-check]
+    if: always() && (needs.quality-check.result == 'success' || github.event.inputs.skip_tests == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+          VERSION: ${{ needs.prepare.outputs.version }}
+
+      - name: Create deployment package
+        run: |
+          tar -czf deployment-${{ needs.prepare.outputs.version }}.tar.gz dist/ worker.js wrangler.toml package.json
+
+      - name: Upload deployment artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-package
+          path: deployment-${{ needs.prepare.outputs.version }}.tar.gz
+          retention-days: 30
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [prepare, build-production]
+    if: needs.prepare.outputs.environment == 'staging' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: https://staging.kids-home-hub.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download deployment artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: deployment-package
+
+      - name: Extract deployment package
+        run: tar -xzf deployment-${{ needs.prepare.outputs.version }}.tar.gz
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Deploy to Cloudflare Workers (Staging)
+        run: npx wrangler deploy --env staging
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Run smoke tests
+        run: npm run test:smoke -- --url=https://staging.kids-home-hub.com
+
+      - name: Create deployment record
+        run: |
+          echo "Deployment successful" >> $GITHUB_STEP_SUMMARY
+          echo "Environment: staging" >> $GITHUB_STEP_SUMMARY
+          echo "Version: ${{ needs.prepare.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "Deployed at: $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify deployment success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: ":rocket: Staging Deployment Successful",
+              attachments: [{
+                color: 'good',
+                fields: [
+                  {
+                    title: 'Environment',
+                    value: 'staging',
+                    short: true
+                  },
+                  {
+                    title: 'Version',
+                    value: '${{ needs.prepare.outputs.version }}',
+                    short: true
+                  },
+                  {
+                    title: 'Deployed by',
+                    value: '${{ github.actor }}',
+                    short: true
+                  },
+                  {
+                    title: 'URL',
+                    value: 'https://staging.kids-home-hub.com',
+                    short: false
+                  }
+                ]
+              }]
+            }
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  integration-tests:
+    name: Integration Tests (Staging)
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: npm run test:integration -- --url=https://staging.kids-home-hub.com
+        env:
+          TEST_URL: https://staging.kids-home-hub.com
+
+      - name: Run E2E tests
+        run: npm run test:e2e -- --url=https://staging.kids-home-hub.com
+        env:
+          TEST_URL: https://staging.kids-home-hub.com
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [prepare, build-production, integration-tests]
+    if: needs.prepare.outputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://kids-home-hub.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download deployment artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: deployment-package
+
+      - name: Extract deployment package
+        run: tar -xzf deployment-${{ needs.prepare.outputs.version }}.tar.gz
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Create backup
+        run: |
+          # Backup current production deployment
+          npm run backup:create -- --environment=production
+
+      - name: Deploy to Cloudflare Workers (Production)
+        id: deploy
+        run: |
+          npx wrangler deploy --env production
+          echo "deployment_url=$(npx wrangler deployments list --env production --limit 1 --json | jq -r '.[0].url')" >> $GITHUB_OUTPUT
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Run smoke tests
+        id: smoke-tests
+        run: npm run test:smoke -- --url=https://kids-home-hub.com
+        continue-on-error: true
+
+      - name: Rollback on failure
+        if: steps.smoke-tests.outcome == 'failure'
+        run: |
+          echo "Smoke tests failed, initiating rollback..."
+          npm run deployment:rollback -- --environment=production
+          exit 1
+
+      - name: Create release tag
+        if: success()
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "v${{ needs.prepare.outputs.version }}" -m "Release ${{ needs.prepare.outputs.version }}"
+          git push origin "v${{ needs.prepare.outputs.version }}"
+
+      - name: Create GitHub Release
+        if: success()
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ needs.prepare.outputs.version }}
+          release_name: Release ${{ needs.prepare.outputs.version }}
+          body: |
+            ## Release ${{ needs.prepare.outputs.version }}
+
+            Deployed to production at $(date -u)
+
+            ### Changes
+            ${{ github.event.head_commit.message }}
+
+            ### Deployment Details
+            - Environment: Production
+            - Commit: ${{ github.sha }}
+            - Actor: ${{ github.actor }}
+          draft: false
+          prerelease: false
+
+      - name: Notify deployment success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: ":tada: Production Deployment Successful",
+              attachments: [{
+                color: 'good',
+                fields: [
+                  {
+                    title: 'Environment',
+                    value: 'production',
+                    short: true
+                  },
+                  {
+                    title: 'Version',
+                    value: '${{ needs.prepare.outputs.version }}',
+                    short: true
+                  },
+                  {
+                    title: 'Deployed by',
+                    value: '${{ github.actor }}',
+                    short: true
+                  },
+                  {
+                    title: 'URL',
+                    value: 'https://kids-home-hub.com',
+                    short: false
+                  }
+                ]
+              }]
+            }
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify deployment failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              text: ":rotating_light: Production Deployment Failed",
+              attachments: [{
+                color: 'danger',
+                fields: [
+                  {
+                    title: 'Environment',
+                    value: 'production',
+                    short: true
+                  },
+                  {
+                    title: 'Version',
+                    value: '${{ needs.prepare.outputs.version }}',
+                    short: true
+                  },
+                  {
+                    title: 'Actor',
+                    value: '${{ github.actor }}',
+                    short: true
+                  },
+                  {
+                    title: 'Action',
+                    value: 'Rollback initiated',
+                    short: true
+                  }
+                ]
+              }]
+            }
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  post-deployment:
+    name: Post-Deployment Tasks
+    needs: [prepare, deploy-production]
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger performance monitoring
+        run: |
+          # Trigger performance monitoring in production
+          curl -X POST https://api.kids-home-hub.com/monitoring/trigger
+
+      - name: Update deployment dashboard
+        run: |
+          echo "Update deployment dashboard with new version"
+
+      - name: Archive deployment logs
+        run: |
+          echo "Archive deployment logs for audit trail"

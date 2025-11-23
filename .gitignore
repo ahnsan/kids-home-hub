@@ -1,47 +1,67 @@
 # Dependencies
 node_modules/
-package-lock.json
-yarn.lock
+.pnp
+.pnp.js
 
-# Environment files
+# Build outputs
+dist/
+build/
+.turbo/
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Development
 .env
 .env.local
-.env.*.local
-.dev.vars
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
 
-# Wrangler
-.wrangler/
-wrangler.toml.local
-
-# Claude Flow
-.claude/context/
-.claude/memory/sessions/
-.claude/memory/metrics/
-.claude/memory/exports/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-logs/
+# Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
 
-# Test coverage
-coverage/
-
-# Build outputs
-dist/
-build/
-
-# Temporary files
-tmp/
-temp/
+# Temporary
 *.tmp
+*.temp
+.cache/
+
+# PWA
+sw.js
+sw.js.map
+workbox-*.js
+workbox-*.js.map
+
+# Wrangler
+.wrangler/
+.dev.vars
+wrangler.toml.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Misc
+.eslintcache

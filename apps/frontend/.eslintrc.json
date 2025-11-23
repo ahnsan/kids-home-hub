@@ -1,0 +1,29 @@
+{
+  "extends": ["../../.eslintrc.json"],
+  "env": {
+    "browser": true
+  },
+  "plugins": ["jsx-a11y", "preact"],
+  "extends": [
+    "../../.eslintrc.json",
+    "plugin:jsx-a11y/recommended"
+  ],
+  "rules": {
+    // Preact/JSX specific rules
+    "jsx-a11y/no-autofocus": "off",
+    "jsx-a11y/anchor-is-valid": "warn",
+
+    // Import organization
+    "@typescript-eslint/consistent-type-imports": [
+      "error",
+      {
+        "prefer": "type-imports"
+      }
+    ]
+  },
+  "settings": {
+    "preact": {
+      "version": "detect"
+    }
+  }
+}

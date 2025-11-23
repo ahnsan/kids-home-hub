@@ -1,0 +1,32 @@
+{
+  "extends": ["../../.eslintrc.json"],
+  "env": {
+    "browser": false,
+    "node": false,
+    "worker": true
+  },
+  "globals": {
+    "Request": "readonly",
+    "Response": "readonly",
+    "Headers": "readonly",
+    "URL": "readonly",
+    "URLSearchParams": "readonly",
+    "fetch": "readonly",
+    "caches": "readonly",
+    "CacheStorage": "readonly"
+  },
+  "rules": {
+    // Cloudflare Workers specific
+    "no-restricted-globals": [
+      "error",
+      {
+        "name": "window",
+        "message": "window is not available in Cloudflare Workers"
+      },
+      {
+        "name": "document",
+        "message": "document is not available in Cloudflare Workers"
+      }
+    ]
+  }
+}
