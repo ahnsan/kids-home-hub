@@ -35,7 +35,7 @@ jobs:
 
       - name: Upload audit report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: npm-audit-report
           path: npm-audit-report.json
@@ -78,7 +78,7 @@ jobs:
 
       - name: Upload Snyk report
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: snyk-report
           path: snyk-report.json
@@ -182,7 +182,7 @@ jobs:
           fi
 
       - name: Upload license report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: license-report
           path: license-report.json
@@ -219,7 +219,7 @@ jobs:
 
       - name: Upload OSV results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v5
         with:
           name: osv-results
           path: osv-results.json
