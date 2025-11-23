@@ -5,9 +5,10 @@
 import { type FunctionComponent } from 'preact';
 import { useState } from 'preact/hooks';
 import { Card } from '../components/common/Card';
-import { currentChild, selectedChildId, updateChildData } from '../stores';
+import { currentChild, selectedChildId, updateChildData, children } from '../stores';
 import { TransactionSheet } from '../components/transactions/TransactionSheet';
 import { RedeemPointsForm } from '../components/features/points/RedeemPointsForm';
+import { ChildSwitch } from '../components/features/child/ChildSwitch';
 import { submitTransaction } from '../api/endpoints';
 import type { TransactionData } from '../types/transactions';
 
@@ -54,6 +55,13 @@ export const PointsView: FunctionComponent = () => {
 
   return (
     <div class="space-y-4">
+      {/* Child Selector */}
+      {children.value.length > 1 && (
+        <div class="flex justify-center mb-4">
+          <ChildSwitch />
+        </div>
+      )}
+
       <h2 class="text-lg font-semibold text-gray-900 mb-2">Reward Points</h2>
 
       <Card>
