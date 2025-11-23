@@ -1,0 +1,34 @@
+{
+  "id": "kv_optimizer",
+  "name": "KV Store Optimizer",
+  "type": "specialist",
+  "description": "Optimizes Cloudflare KV operations for performance and cost efficiency",
+  "capabilities": [
+    "batch_operations",
+    "cache_optimization",
+    "data_compression",
+    "key_structure_analysis"
+  ],
+  "memory": {
+    "enabled": true,
+    "context_window": 50,
+    "learning_enabled": true
+  },
+  "triggers": [
+    {
+      "event": "kv_write",
+      "threshold": 10,
+      "action": "analyze_batch_opportunity"
+    },
+    {
+      "event": "kv_read_miss",
+      "threshold": 5,
+      "action": "optimize_cache_strategy"
+    }
+  ],
+  "outputs": [
+    "optimization_recommendations",
+    "performance_metrics",
+    "cost_analysis"
+  ]
+}

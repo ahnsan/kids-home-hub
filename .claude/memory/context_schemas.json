@@ -1,0 +1,189 @@
+{
+  "schemas": {
+    "child_profile": {
+      "version": "1.0",
+      "fields": {
+        "child_id": {
+          "type": "string",
+          "required": true,
+          "immutable": true
+        },
+        "name": {
+          "type": "string",
+          "required": true
+        },
+        "created_at": {
+          "type": "timestamp",
+          "required": true,
+          "immutable": true
+        },
+        "preferences": {
+          "type": "object",
+          "fields": {
+            "favorite_chores": {
+              "type": "array",
+              "items": "string"
+            },
+            "reward_preferences": {
+              "type": "array",
+              "items": "string"
+            },
+            "notification_time": {
+              "type": "time"
+            }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "fields": {
+            "total_chores_completed": {
+              "type": "number",
+              "default": 0
+            },
+            "total_points_earned": {
+              "type": "number",
+              "default": 0
+            },
+            "consistency_score": {
+              "type": "number",
+              "min": 0,
+              "max": 100
+            }
+          }
+        }
+      }
+    },
+    "session_context": {
+      "version": "1.0",
+      "fields": {
+        "session_id": {
+          "type": "string",
+          "required": true
+        },
+        "child_id": {
+          "type": "string",
+          "required": true
+        },
+        "started_at": {
+          "type": "timestamp",
+          "required": true
+        },
+        "ended_at": {
+          "type": "timestamp"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "action_type": {
+                "type": "string",
+                "enum": ["view", "transaction", "chore", "redeem", "navigation"]
+              },
+              "timestamp": {
+                "type": "timestamp"
+              },
+              "details": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "device_info": {
+          "type": "object",
+          "fields": {
+            "user_agent": "string",
+            "viewport_size": "string",
+            "is_pwa": "boolean"
+          }
+        }
+      }
+    },
+    "insight": {
+      "version": "1.0",
+      "fields": {
+        "insight_id": {
+          "type": "string",
+          "required": true
+        },
+        "type": {
+          "type": "string",
+          "enum": ["pattern", "recommendation", "alert", "achievement"],
+          "required": true
+        },
+        "child_id": {
+          "type": "string",
+          "required": true
+        },
+        "generated_at": {
+          "type": "timestamp",
+          "required": true
+        },
+        "confidence": {
+          "type": "number",
+          "min": 0,
+          "max": 1
+        },
+        "title": {
+          "type": "string",
+          "required": true
+        },
+        "description": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object"
+        },
+        "actionable": {
+          "type": "boolean",
+          "default": false
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "fields": {
+              "label": "string",
+              "action": "string",
+              "params": "object"
+            }
+          }
+        }
+      }
+    },
+    "learning_state": {
+      "version": "1.0",
+      "fields": {
+        "module_id": {
+          "type": "string",
+          "required": true
+        },
+        "child_id": {
+          "type": "string",
+          "required": true
+        },
+        "model_version": {
+          "type": "string",
+          "required": true
+        },
+        "updated_at": {
+          "type": "timestamp",
+          "required": true
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Learned model parameters"
+        },
+        "performance_metrics": {
+          "type": "object",
+          "fields": {
+            "accuracy": "number",
+            "precision": "number",
+            "recall": "number",
+            "training_samples": "number"
+          }
+        }
+      }
+    }
+  }
+}

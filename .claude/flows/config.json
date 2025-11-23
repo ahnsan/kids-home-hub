@@ -1,0 +1,75 @@
+{
+  "version": "1.0",
+  "project": {
+    "name": "kids-home-hub",
+    "description": "AI-powered Kids Home Hub with intelligent task management",
+    "type": "cloudflare-worker"
+  },
+  "flows": {
+    "enabled": true,
+    "auto_track": true,
+    "session_tracking": true
+  },
+  "hive_memory": {
+    "enabled": true,
+    "namespace": "kids-hub",
+    "retention_days": 90,
+    "auto_sync": true,
+    "memory_types": [
+      "task_context",
+      "user_patterns",
+      "optimization_insights",
+      "error_patterns"
+    ]
+  },
+  "agent_swarms": {
+    "enabled": true,
+    "max_concurrent_agents": 5,
+    "coordination_mode": "hierarchical",
+    "swarms": [
+      {
+        "id": "data_management",
+        "name": "Data Management Swarm",
+        "description": "Manages KV operations, data validation, and consistency",
+        "agents": [
+          "kv_optimizer",
+          "data_validator",
+          "cache_manager"
+        ]
+      },
+      {
+        "id": "ui_optimization",
+        "name": "UI/UX Optimization Swarm",
+        "description": "Optimizes PWA performance and user experience",
+        "agents": [
+          "performance_monitor",
+          "accessibility_checker",
+          "pwa_optimizer"
+        ]
+      },
+      {
+        "id": "analytics",
+        "name": "Analytics & Insights Swarm",
+        "description": "Tracks usage patterns and provides insights",
+        "agents": [
+          "usage_analyzer",
+          "pattern_detector",
+          "recommendation_engine"
+        ]
+      }
+    ]
+  },
+  "hooks": {
+    "pre_task": ".claude/hooks/pre-task.sh",
+    "post_task": ".claude/hooks/post-task.sh",
+    "session_start": ".claude/hooks/session-start.sh",
+    "session_end": ".claude/hooks/session-end.sh"
+  },
+  "integrations": {
+    "cloudflare": {
+      "kv_namespace": "CHILD_SPEND",
+      "auto_deploy": false,
+      "dev_mode": true
+    }
+  }
+}

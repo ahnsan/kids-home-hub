@@ -1,0 +1,46 @@
+{
+  "id": "usage_analyzer",
+  "name": "Usage Pattern Analyzer",
+  "type": "analytics",
+  "description": "Analyzes child activity patterns and provides parental insights",
+  "capabilities": [
+    "pattern_recognition",
+    "trend_analysis",
+    "behavioral_insights",
+    "predictive_modeling"
+  ],
+  "memory": {
+    "enabled": true,
+    "context_window": 100,
+    "learning_enabled": true,
+    "retention_policy": "aggregate_daily"
+  },
+  "analysis_targets": [
+    {
+      "metric": "chore_completion_rate",
+      "frequency": "daily",
+      "insights": ["consistency_score", "motivation_trends", "optimal_timing"]
+    },
+    {
+      "metric": "points_redemption",
+      "frequency": "weekly",
+      "insights": ["reward_preferences", "saving_behavior", "impulse_patterns"]
+    },
+    {
+      "metric": "screen_time_usage",
+      "frequency": "daily",
+      "insights": ["usage_patterns", "balance_score", "time_of_day_preferences"]
+    },
+    {
+      "metric": "money_management",
+      "frequency": "monthly",
+      "insights": ["spending_habits", "savings_growth", "financial_literacy"]
+    }
+  ],
+  "outputs": [
+    "weekly_summary",
+    "parent_dashboard_data",
+    "child_progress_report",
+    "recommendations"
+  ]
+}

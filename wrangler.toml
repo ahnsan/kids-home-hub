@@ -1,0 +1,38 @@
+name = "kids-home-hub"
+main = "worker.js"
+compatibility_date = "2024-11-27"
+workers_dev = true
+
+# KV Namespace for storing child data
+[[kv_namespaces]]
+binding = "CHILD_SPEND"
+id = "your-kv-namespace-id-here"
+preview_id = "your-preview-kv-namespace-id-here"
+
+# Environment variables
+[env.production]
+name = "kids-home-hub-production"
+
+[[env.production.kv_namespaces]]
+binding = "CHILD_SPEND"
+id = "your-production-kv-namespace-id-here"
+
+[env.development]
+name = "kids-home-hub-dev"
+
+[[env.development.kv_namespaces]]
+binding = "CHILD_SPEND"
+id = "your-dev-kv-namespace-id-here"
+
+# Build configuration
+[build]
+command = ""
+
+# Triggers (optional - for scheduled analytics)
+[triggers]
+crons = ["0 0 * * *"]  # Daily at midnight UTC for analytics
+
+# Observability
+[observability]
+enabled = true
+head_sampling_rate = 1

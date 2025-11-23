@@ -1,0 +1,30 @@
+{
+  "name": "kids-home-hub",
+  "version": "1.0.0",
+  "description": "Kids Home Hub PWA with Claude Flow, Hive Memory & Agent Swarms",
+  "main": "worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "flow:init": "npx claude-flow@alpha init",
+    "flow:session": "npx claude-flow@alpha session start",
+    "flow:metrics": "npx claude-flow@alpha metrics --export",
+    "test": "vitest"
+  },
+  "keywords": [
+    "cloudflare-workers",
+    "pwa",
+    "claude-flow",
+    "ai-agents"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "wrangler": "^3.94.0",
+    "vitest": "^2.1.8"
+  },
+  "dependencies": {
+    "claude-flow": "alpha"
+  }
+}

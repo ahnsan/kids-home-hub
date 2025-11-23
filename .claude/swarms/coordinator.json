@@ -1,0 +1,186 @@
+{
+  "version": "1.0",
+  "coordinator": {
+    "id": "main_coordinator",
+    "name": "Kids Hub Coordinator",
+    "type": "hierarchical",
+    "description": "Orchestrates agent swarms for optimal system performance"
+  },
+  "coordination_strategy": {
+    "mode": "dynamic",
+    "priority_based": true,
+    "load_balancing": true,
+    "max_concurrent_swarms": 3
+  },
+  "swarm_definitions": [
+    {
+      "id": "data_management",
+      "name": "Data Management Swarm",
+      "priority": "high",
+      "coordination_type": "parallel",
+      "agents": [
+        {
+          "id": "kv_optimizer",
+          "role": "lead",
+          "weight": 0.4
+        },
+        {
+          "id": "data_validator",
+          "role": "support",
+          "weight": 0.3
+        },
+        {
+          "id": "cache_manager",
+          "role": "support",
+          "weight": 0.3
+        }
+      ],
+      "triggers": [
+        {
+          "event": "transaction_request",
+          "conditions": ["data_validation_required"],
+          "activate": ["data_validator", "kv_optimizer"]
+        },
+        {
+          "event": "high_read_volume",
+          "conditions": ["read_count > 100/min"],
+          "activate": ["cache_manager", "kv_optimizer"]
+        }
+      ],
+      "communication": {
+        "protocol": "message_queue",
+        "async": true,
+        "timeout": 5000
+      }
+    },
+    {
+      "id": "ui_optimization",
+      "name": "UI/UX Optimization Swarm",
+      "priority": "medium",
+      "coordination_type": "sequential",
+      "agents": [
+        {
+          "id": "performance_monitor",
+          "role": "lead",
+          "weight": 0.5
+        },
+        {
+          "id": "accessibility_checker",
+          "role": "support",
+          "weight": 0.25
+        },
+        {
+          "id": "pwa_optimizer",
+          "role": "support",
+          "weight": 0.25
+        }
+      ],
+      "triggers": [
+        {
+          "event": "page_load",
+          "conditions": ["performance_metrics_available"],
+          "activate": ["performance_monitor"]
+        },
+        {
+          "event": "ui_change",
+          "conditions": ["accessibility_check_needed"],
+          "activate": ["accessibility_checker"]
+        },
+        {
+          "event": "deployment",
+          "conditions": ["pwa_update_required"],
+          "activate": ["pwa_optimizer"]
+        }
+      ],
+      "communication": {
+        "protocol": "event_stream",
+        "async": false,
+        "timeout": 3000
+      }
+    },
+    {
+      "id": "analytics",
+      "name": "Analytics & Insights Swarm",
+      "priority": "low",
+      "coordination_type": "parallel",
+      "agents": [
+        {
+          "id": "usage_analyzer",
+          "role": "lead",
+          "weight": 0.5
+        },
+        {
+          "id": "pattern_detector",
+          "role": "support",
+          "weight": 0.3
+        },
+        {
+          "id": "recommendation_engine",
+          "role": "support",
+          "weight": 0.2
+        }
+      ],
+      "triggers": [
+        {
+          "event": "daily_rollup",
+          "conditions": ["time = 00:00"],
+          "activate": ["usage_analyzer", "pattern_detector"]
+        },
+        {
+          "event": "insight_request",
+          "conditions": ["parent_dashboard_access"],
+          "activate": ["usage_analyzer", "recommendation_engine"]
+        }
+      ],
+      "communication": {
+        "protocol": "pub_sub",
+        "async": true,
+        "timeout": 10000
+      }
+    }
+  ],
+  "inter_swarm_communication": {
+    "enabled": true,
+    "protocols": ["direct_message", "broadcast", "request_response"],
+    "message_bus": {
+      "type": "in_memory",
+      "max_queue_size": 1000,
+      "retention": 3600
+    }
+  },
+  "health_monitoring": {
+    "enabled": true,
+    "check_interval": 60,
+    "metrics": [
+      "agent_response_time",
+      "task_success_rate",
+      "resource_utilization",
+      "message_latency"
+    ],
+    "alerts": [
+      {
+        "condition": "agent_response_time > 5000",
+        "action": "restart_agent",
+        "severity": "warning"
+      },
+      {
+        "condition": "task_success_rate < 0.8",
+        "action": "notify_coordinator",
+        "severity": "error"
+      }
+    ]
+  },
+  "optimization": {
+    "auto_scaling": {
+      "enabled": true,
+      "min_agents_per_swarm": 1,
+      "max_agents_per_swarm": 5,
+      "scale_up_threshold": 0.8,
+      "scale_down_threshold": 0.3
+    },
+    "task_distribution": {
+      "algorithm": "weighted_round_robin",
+      "rebalance_interval": 300
+    }
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "id": "data_validator",
+  "name": "Data Validation Agent",
+  "type": "specialist",
+  "swarm": "data_management",
+  "description": "Validates all data operations for consistency and integrity",
+  "capabilities": [
+    "schema_validation",
+    "data_sanitization",
+    "constraint_checking",
+    "anomaly_detection"
+  ],
+  "validation_rules": {
+    "transactions": {
+      "money": [
+        {
+          "field": "amount",
+          "rules": ["required", "positive", "max:10000"]
+        },
+        {
+          "field": "currency",
+          "rules": ["required", "in:GBP,AUD"]
+        },
+        {
+          "field": "reason",
+          "rules": ["required", "min_length:3", "max_length:200"]
+        }
+      ],
+      "points": [
+        {
+          "field": "amount",
+          "rules": ["required", "positive", "integer", "max:1000"]
+        },
+        {
+          "field": "reason",
+          "rules": ["required", "min_length:3"]
+        }
+      ],
+      "screen_time": [
+        {
+          "field": "minutes",
+          "rules": ["required", "positive", "integer", "max:480"]
+        },
+        {
+          "field": "reason",
+          "rules": ["required"]
+        }
+      ]
+    },
+    "chores": [
+      {
+        "field": "chore_ids",
+        "rules": ["required", "array", "min:1", "max:10"]
+      },
+      {
+        "field": "child",
+        "rules": ["required", "in:adam,sami"]
+      }
+    ]
+  },
+  "sanitization": {
+    "string_fields": {
+      "trim": true,
+      "remove_html": true,
+      "max_length": 500
+    },
+    "numeric_fields": {
+      "remove_non_numeric": true,
+      "precision": 2
+    }
+  },
+  "anomaly_detection": {
+    "enabled": true,
+    "rules": [
+      {
+        "name": "excessive_transactions",
+        "condition": "transactions_per_hour > 20",
+        "action": "flag_for_review",
+        "severity": "medium"
+      },
+      {
+        "name": "suspicious_amounts",
+        "condition": "amount > avg_amount * 10",
+        "action": "require_confirmation",
+        "severity": "high"
+      },
+      {
+        "name": "balance_inconsistency",
+        "condition": "calculated_balance != stored_balance",
+        "action": "trigger_reconciliation",
+        "severity": "critical"
+      }
+    ]
+  },
+  "outputs": [
+    "validation_status",
+    "sanitized_data",
+    "error_details",
+    "anomaly_alerts"
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "workflow_id": "data_pipeline",
+  "name": "Data Processing Pipeline",
+  "description": "Handles all data operations with validation, optimization, and sync",
+  "version": "1.0",
+  "triggers": [
+    {
+      "type": "event",
+      "event": "transaction_request",
+      "conditions": ["authenticated", "valid_input"]
+    },
+    {
+      "type": "event",
+      "event": "chore_submission",
+      "conditions": ["valid_child", "valid_chores"]
+    },
+    {
+      "type": "event",
+      "event": "points_redemption",
+      "conditions": ["sufficient_balance"]
+    }
+  ],
+  "steps": [
+    {
+      "id": "validate",
+      "name": "Data Validation",
+      "agent": "data_validator",
+      "timeout": 2000,
+      "on_error": "abort",
+      "inputs": {
+        "data": "${event.payload}",
+        "schema": "${event.type}_schema"
+      },
+      "outputs": {
+        "validated_data": "object",
+        "validation_errors": "array"
+      }
+    },
+    {
+      "id": "process",
+      "name": "Process Transaction",
+      "depends_on": ["validate"],
+      "condition": "${validate.validation_errors.length == 0}",
+      "type": "worker_function",
+      "function": "handleTransaction",
+      "timeout": 3000,
+      "on_error": "retry",
+      "retry_config": {
+        "max_attempts": 3,
+        "backoff": "exponential"
+      },
+      "inputs": {
+        "data": "${validate.validated_data}"
+      }
+    },
+    {
+      "id": "optimize",
+      "name": "KV Optimization",
+      "depends_on": ["process"],
+      "agent": "kv_optimizer",
+      "async": true,
+      "timeout": 5000,
+      "inputs": {
+        "operation_type": "${event.type}",
+        "keys_accessed": "${process.keys}"
+      }
+    },
+    {
+      "id": "sync_memory",
+      "name": "Sync to Hive Memory",
+      "depends_on": ["process"],
+      "type": "hive_sync",
+      "async": true,
+      "inputs": {
+        "data": "${process.result}",
+        "context": "${event.context}"
+      }
+    },
+    {
+      "id": "update_analytics",
+      "name": "Update Analytics",
+      "depends_on": ["process"],
+      "agent": "usage_analyzer",
+      "async": true,
+      "inputs": {
+        "transaction": "${process.result}",
+        "child_id": "${event.payload.child}"
+      }
+    }
+  ],
+  "error_handling": {
+    "default_action": "log_and_notify",
+    "critical_errors": ["data_corruption", "balance_mismatch"],
+    "notification_channels": ["admin_dashboard", "logs"]
+  },
+  "monitoring": {
+    "track_duration": true,
+    "track_success_rate": true,
+    "alert_on_failure": true
+  }
+}

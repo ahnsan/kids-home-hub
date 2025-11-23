@@ -1,0 +1,61 @@
+{
+  "id": "pwa_optimizer",
+  "name": "PWA Performance Optimizer",
+  "type": "specialist",
+  "description": "Optimizes Progressive Web App performance and offline capabilities",
+  "capabilities": [
+    "service_worker_optimization",
+    "cache_strategy_management",
+    "asset_preloading",
+    "offline_experience"
+  ],
+  "memory": {
+    "enabled": true,
+    "context_window": 30,
+    "learning_enabled": true
+  },
+  "optimization_targets": [
+    {
+      "metric": "first_contentful_paint",
+      "target": "< 1.5s",
+      "priority": "high"
+    },
+    {
+      "metric": "time_to_interactive",
+      "target": "< 3s",
+      "priority": "high"
+    },
+    {
+      "metric": "cache_hit_rate",
+      "target": "> 90%",
+      "priority": "medium"
+    },
+    {
+      "metric": "offline_capability",
+      "target": "100%",
+      "priority": "high"
+    }
+  ],
+  "strategies": [
+    {
+      "name": "critical_css_inline",
+      "enabled": true,
+      "description": "Inline critical CSS for faster rendering"
+    },
+    {
+      "name": "resource_hints",
+      "enabled": true,
+      "description": "Add preconnect and dns-prefetch hints"
+    },
+    {
+      "name": "progressive_enhancement",
+      "enabled": true,
+      "description": "Ensure core functionality works offline"
+    }
+  ],
+  "outputs": [
+    "performance_score",
+    "optimization_suggestions",
+    "lighthouse_metrics"
+  ]
+}

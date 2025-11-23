@@ -1,0 +1,109 @@
+{
+  "version": "1.0",
+  "namespace": "kids-hub",
+  "storage": {
+    "backend": "cloudflare-kv",
+    "prefix": "hive:",
+    "compression": true,
+    "encryption": false
+  },
+  "memory_layers": {
+    "short_term": {
+      "enabled": true,
+      "ttl": 86400,
+      "max_entries": 1000,
+      "description": "Stores recent interactions and immediate context"
+    },
+    "medium_term": {
+      "enabled": true,
+      "ttl": 604800,
+      "max_entries": 500,
+      "description": "Weekly patterns and aggregated insights"
+    },
+    "long_term": {
+      "enabled": true,
+      "ttl": 7776000,
+      "max_entries": 100,
+      "description": "Historical trends and learned behaviors"
+    }
+  },
+  "context_tracking": {
+    "user_sessions": {
+      "enabled": true,
+      "track_navigation": true,
+      "track_interactions": true,
+      "anonymize": false
+    },
+    "task_execution": {
+      "enabled": true,
+      "track_duration": true,
+      "track_success_rate": true,
+      "track_errors": true
+    },
+    "data_operations": {
+      "enabled": true,
+      "track_reads": true,
+      "track_writes": true,
+      "track_patterns": true
+    }
+  },
+  "learning_modules": {
+    "chore_patterns": {
+      "enabled": true,
+      "algorithm": "temporal_analysis",
+      "features": [
+        "completion_time",
+        "day_of_week",
+        "time_of_day",
+        "sequence_patterns"
+      ],
+      "outputs": [
+        "optimal_reminder_times",
+        "difficulty_scores",
+        "completion_predictions"
+      ]
+    },
+    "reward_optimization": {
+      "enabled": true,
+      "algorithm": "reinforcement_learning",
+      "features": [
+        "redemption_frequency",
+        "saving_duration",
+        "reward_type_preference",
+        "motivation_signals"
+      ],
+      "outputs": [
+        "personalized_rewards",
+        "engagement_scores",
+        "motivation_trends"
+      ]
+    },
+    "financial_literacy": {
+      "enabled": true,
+      "algorithm": "progression_tracking",
+      "features": [
+        "transaction_patterns",
+        "saving_behavior",
+        "spending_decisions",
+        "goal_achievement"
+      ],
+      "outputs": [
+        "literacy_score",
+        "learning_recommendations",
+        "milestone_tracking"
+      ]
+    }
+  },
+  "sync_strategy": {
+    "mode": "event_driven",
+    "batch_size": 50,
+    "sync_interval": 300,
+    "conflict_resolution": "last_write_wins"
+  },
+  "privacy": {
+    "data_minimization": true,
+    "retention_policy": "90_days",
+    "export_enabled": true,
+    "delete_on_request": true
+  }
+}

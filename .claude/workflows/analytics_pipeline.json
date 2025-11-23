@@ -1,0 +1,165 @@
+{
+  "workflow_id": "analytics_pipeline",
+  "name": "Analytics & Insights Pipeline",
+  "description": "Generates insights, recommendations, and reports",
+  "version": "1.0",
+  "schedule": {
+    "type": "cron",
+    "expression": "0 0 * * *",
+    "timezone": "UTC",
+    "description": "Runs daily at midnight"
+  },
+  "triggers": [
+    {
+      "type": "schedule",
+      "schedule_id": "daily_rollup"
+    },
+    {
+      "type": "event",
+      "event": "insight_request",
+      "conditions": ["authorized_parent"]
+    },
+    {
+      "type": "threshold",
+      "metric": "transactions_count",
+      "condition": "> 100",
+      "window": "1h"
+    }
+  ],
+  "steps": [
+    {
+      "id": "collect_data",
+      "name": "Collect Analytics Data",
+      "type": "data_collection",
+      "timeout": 5000,
+      "sources": [
+        "kv:points:log:*",
+        "kv:screen:log:*",
+        "kv:log_*",
+        "kv:chores:log:*"
+      ],
+      "outputs": {
+        "transactions": "array",
+        "chores": "array",
+        "redemptions": "array"
+      }
+    },
+    {
+      "id": "analyze_patterns",
+      "name": "Analyze Behavior Patterns",
+      "depends_on": ["collect_data"],
+      "agent": "pattern_detector",
+      "timeout": 10000,
+      "inputs": {
+        "data": "${collect_data.transactions}",
+        "time_window": "7d"
+      },
+      "outputs": {
+        "patterns": "array",
+        "trends": "object",
+        "anomalies": "array"
+      }
+    },
+    {
+      "id": "generate_insights",
+      "name": "Generate Insights",
+      "depends_on": ["analyze_patterns"],
+      "agent": "usage_analyzer",
+      "timeout": 10000,
+      "inputs": {
+        "patterns": "${analyze_patterns.patterns}",
+        "trends": "${analyze_patterns.trends}",
+        "historical_data": "${collect_data}"
+      },
+      "outputs": {
+        "insights": "array",
+        "metrics": "object",
+        "alerts": "array"
+      }
+    },
+    {
+      "id": "generate_recommendations",
+      "name": "Generate Recommendations",
+      "depends_on": ["generate_insights"],
+      "agent": "recommendation_engine",
+      "timeout": 10000,
+      "inputs": {
+        "insights": "${generate_insights.insights}",
+        "child_profiles": "stored"
+      },
+      "outputs": {
+        "recommendations": "array",
+        "next_actions": "array"
+      }
+    },
+    {
+      "id": "store_results",
+      "name": "Store Analytics Results",
+      "depends_on": ["generate_insights", "generate_recommendations"],
+      "type": "kv_write",
+      "operations": [
+        {
+          "key": "analytics:daily:${date}",
+          "value": "${generate_insights.metrics}",
+          "expiration_ttl": 2592000
+        },
+        {
+          "key": "recommendations:latest",
+          "value": "${generate_recommendations.recommendations}",
+          "expiration_ttl": 604800
+        }
+      ]
+    },
+    {
+      "id": "update_memory",
+      "name": "Update Hive Memory",
+      "depends_on": ["store_results"],
+      "type": "hive_sync",
+      "async": true,
+      "inputs": {
+        "insights": "${generate_insights.insights}",
+        "patterns": "${analyze_patterns.patterns}",
+        "learning_data": {
+          "trends": "${analyze_patterns.trends}",
+          "recommendations": "${generate_recommendations.recommendations}"
+        }
+      }
+    },
+    {
+      "id": "notify",
+      "name": "Send Notifications",
+      "depends_on": ["generate_recommendations"],
+      "condition": "${generate_insights.alerts.length > 0}",
+      "type": "notification",
+      "channels": ["parent_dashboard"],
+      "template": "insights_summary",
+      "inputs": {
+        "alerts": "${generate_insights.alerts}",
+        "recommendations": "${generate_recommendations.next_actions}"
+      }
+    }
+  ],
+  "parallel_execution": {
+    "enabled": true,
+    "groups": [
+      {
+        "name": "analysis",
+        "steps": ["analyze_patterns"]
+      },
+      {
+        "name": "storage",
+        "steps": ["store_results", "update_memory"]
+      }
+    ]
+  },
+  "error_handling": {
+    "default_action": "log_and_continue",
+    "critical_errors": ["data_collection_failed"],
+    "fallback_strategy": "use_cached_data"
+  },
+  "monitoring": {
+    "track_duration": true,
+    "track_data_volume": true,
+    "alert_on_anomalies": true
+  }
+}
