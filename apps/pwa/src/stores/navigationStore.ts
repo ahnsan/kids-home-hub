@@ -4,12 +4,12 @@
 
 import { signal, effect } from '@preact/signals';
 
-export type ViewId = 'bank' | 'points' | 'chores' | 'screen';
+export type ViewId = 'home' | 'bank' | 'points' | 'chores' | 'screen' | 'settings';
 
 /**
  * Active view
  */
-export const activeView = signal<ViewId>('bank');
+export const activeView = signal<ViewId>('home');
 
 /**
  * Navigate to a view
@@ -35,7 +35,7 @@ effect(() => {
 export function initializeNavigationStore(): void {
   try {
     const stored = localStorage.getItem('activeView');
-    if (stored && ['bank', 'points', 'chores', 'screen'].includes(stored)) {
+    if (stored && ['home', 'bank', 'points', 'chores', 'screen', 'settings'].includes(stored)) {
       activeView.value = stored as ViewId;
     }
   } catch (error) {

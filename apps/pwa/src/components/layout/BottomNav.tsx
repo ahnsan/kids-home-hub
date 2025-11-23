@@ -13,10 +13,11 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { id: 'home', icon: '🏠', label: 'Home' },
   { id: 'bank', icon: '💰', label: 'Bank' },
-  { id: 'points', icon: '⭐', label: 'Points' },
   { id: 'chores', icon: '🧹', label: 'Chores' },
-  { id: 'screen', icon: '📱', label: 'Screen' }
+  { id: 'screen', icon: '📱', label: 'Screen' },
+  { id: 'settings', icon: '⚙️', label: 'Settings' }
 ];
 
 export const BottomNav: FunctionComponent = () => {
