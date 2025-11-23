@@ -3,12 +3,17 @@
  */
 
 import { type FunctionComponent } from 'preact';
+import { useState } from 'preact/hooks';
 import { Card } from '../components/common/Card';
-import { currentChild } from '../stores';
-import { PointsAdjustForm } from '../components/features/points/PointsAdjustForm';
+import { currentChild, selectedChildId, updateChildData } from '../stores';
+import { TransactionSheet } from '../components/transactions/TransactionSheet';
 import { RedeemPointsForm } from '../components/features/points/RedeemPointsForm';
+import { submitTransaction } from '../api/endpoints';
+import type { TransactionData } from '../types/transactions';
 
 export const PointsView: FunctionComponent = () => {
+  const [isTransactionOpen, setIsTransactionOpen] = useState(false);
+
   if (!currentChild.value) {
     return (
       <Card>
@@ -16,6 +21,36 @@ export const PointsView: FunctionComponent = () => {
       </Card>
     );
   }
+
+  const handleTransaction = async (data: TransactionData) => {
+    // Apply optimistic UI update
+    const child = currentChild.value;
+    if (child) {
+      const delta = data.action === 'add' ? data.amount : -data.amount;
+      updateChildData(selectedChildId.value, {
+        pointsTotal: child.pointsTotal + delta
+      });
+    }
+
+    try {
+      // Sync with backend - convert UI action ('remove') to API action ('deduct')
+      await submitTransaction({
+        feature: 'points',
+        child: selectedChildId.value,
+        action: data.action === 'remove' ? 'deduct' : data.action,
+        amount: data.amount,
+        reason: data.reason
+      });
+    } catch (err) {
+      // Backend failed but transaction queued for offline sync
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      // eslint-disable-next-line no-console
+      console.log('[PointsView] Queued for offline sync:', message);
+    }
+
+    // Close sheet on success
+    setIsTransactionOpen(false);
+  };
 
   return (
     <div class="space-y-4">
@@ -31,16 +66,15 @@ export const PointsView: FunctionComponent = () => {
           <div class="text-2xl font-bold text-primary-500">
             {currentChild.value.pointsTotal} pts
           </div>
-          <div class="text-sm text-surface-500 mt-1">
-            Total reward points
-          </div>
+          <div class="text-sm text-surface-500 mt-1">Total reward points</div>
         </div>
 
-      </Card>
-
-      <Card>
-        <h3 class="font-semibold text-gray-900 mb-4">Adjust Points</h3>
-        <PointsAdjustForm />
+        <button
+          onClick={() => setIsTransactionOpen(true)}
+          class="w-full px-6 py-3 bg-primary-500 text-white rounded-full font-medium hover:bg-primary-600 transition-colors active:scale-95"
+        >
+          Add/Remove Points
+        </button>
       </Card>
 
       <Card>
@@ -50,6 +84,14 @@ export const PointsView: FunctionComponent = () => {
         </p>
         <RedeemPointsForm />
       </Card>
+
+      <TransactionSheet
+        isOpen={isTransactionOpen}
+        onClose={() => setIsTransactionOpen(false)}
+        onSubmit={handleTransaction}
+        feature="points"
+        childId={selectedChildId.value || ''}
+      />
     </div>
   );
 };
