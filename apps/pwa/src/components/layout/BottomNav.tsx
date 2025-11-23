@@ -17,7 +17,7 @@ const navItems: NavItem[] = [
   { id: 'bank', icon: '💰', label: 'Bank' },
   { id: 'points', icon: '⭐', label: 'Points' },
   { id: 'chores', icon: '🧹', label: 'Chores' },
-  { id: 'settings', icon: '⚙️', label: 'Settings' }
+  { id: 'screen', icon: '📱', label: 'Screen' }
 ];
 
 export const BottomNav: FunctionComponent = () => {
