@@ -58,8 +58,8 @@ export const App: FunctionComponent = () => {
         <div class="flex flex-col h-full bg-surface-50">
           <Header />
 
-          {/* Only show child switch on specific views (not home or settings) */}
-          {view !== 'settings' && view !== 'home' && (
+          {/* Only show child switch on specific views (not home, points, or settings) */}
+          {view !== 'settings' && view !== 'home' && view !== 'points' && (
             <div class="flex justify-center mb-2 safe-top">
               <ChildSwitch />
             </div>
