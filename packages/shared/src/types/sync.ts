@@ -11,7 +11,7 @@ export type QueuePriority = 1 | 5 | 10;
 export interface QueuedAction {
   id?: number;
   operation: 'create' | 'update' | 'delete';
-  entityType: 'transaction' | 'chore' | 'redeem';
+  entityType: 'transaction' | 'chore' | 'redeem' | 'child';
   entityId: string;
   data: unknown;
   priority: QueuePriority;

@@ -1,0 +1,24 @@
+name = "kids-home-hub-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+node_compat = true
+
+[env.production]
+name = "kids-home-hub-api"
+route = "api.kids-home-hub.com/*"
+
+[env.staging]
+name = "kids-home-hub-api-staging"
+
+# Environment variables (set via wrangler secret put)
+# Required secrets:
+# - DATABASE_URL: Neon PostgreSQL connection string
+# - JWT_SECRET: Secret key for signing JWTs
+# - MAGIC_LINK_SECRET: Secret key for magic link tokens
+# - RESEND_API_KEY: Resend API key for sending emails
+
+[[env.production.vars]]
+ENVIRONMENT = "production"
+
+[[env.staging.vars]]
+ENVIRONMENT = "staging"

@@ -90,7 +90,8 @@ export default defineConfig({
               },
               cacheableResponse: {
                 statuses: [0, 200]
-              }
+              },
+              networkTimeoutSeconds: 10
             }
           },
           {
@@ -105,6 +106,11 @@ export default defineConfig({
             }
           }
         ]
+      },
+      // Enable background sync
+      devOptions: {
+        enabled: true,
+        type: 'module'
       }
     })
   ],
@@ -145,7 +151,7 @@ export default defineConfig({
     'import.meta.env.VITE_API_URL': JSON.stringify(
       process.env.VITE_API_URL ||
       (process.env.NODE_ENV === 'production'
-        ? 'https://kids-home-hub-api.workers.dev'
+        ? 'https://kids-home-hub-api.karim-005.workers.dev'
         : 'http://localhost:8787')
     )
   },

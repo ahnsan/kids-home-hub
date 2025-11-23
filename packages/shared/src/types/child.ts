@@ -2,7 +2,7 @@
  * Child entity types
  */
 
-export type ChildId = 'adam' | 'sami';
+export type ChildId = string;
 
 export interface Child {
   id: ChildId;

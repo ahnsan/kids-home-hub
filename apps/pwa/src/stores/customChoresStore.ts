@@ -4,6 +4,8 @@
 
 import { signal } from '@preact/signals';
 import { nanoid } from 'nanoid';
+import { isAuthenticated } from './authStore';
+import { syncService } from '../services/sync';
 
 export interface CustomChore {
   id: string;
@@ -69,6 +71,18 @@ export function addCustomChore(label: string, points: number): CustomChore {
   customChores.value = [...customChores.value, newChore];
   saveChores(customChores.value);
 
+  // Queue sync action if authenticated
+  if (isAuthenticated.value) {
+    syncService.queueAction({
+      type: 'add_chore',
+      entityType: 'chore',
+      entityId: newChore.id,
+      data: newChore
+    }).catch(error => {
+      console.error('[Store] Failed to queue sync action:', error);
+    });
+  }
+
   return newChore;
 }
 
@@ -103,6 +117,18 @@ export function updateCustomChore(id: string, updates: { label?: string; points?
   customChores.value = newChores;
   saveChores(customChores.value);
 
+  // Queue sync action if authenticated
+  if (isAuthenticated.value) {
+    syncService.queueAction({
+      type: 'update_chore',
+      entityType: 'chore',
+      entityId: id,
+      data: updates
+    }).catch(error => {
+      console.error('[Store] Failed to queue sync action:', error);
+    });
+  }
+
   return true;
 }
 
@@ -118,6 +144,18 @@ export function deleteCustomChore(id: string): boolean {
 
   customChores.value = customChores.value.filter(c => c.id !== id);
   saveChores(customChores.value);
+
+  // Queue sync action if authenticated
+  if (isAuthenticated.value) {
+    syncService.queueAction({
+      type: 'delete_chore',
+      entityType: 'chore',
+      entityId: id,
+      data: { deleted: true }
+    }).catch(error => {
+      console.error('[Store] Failed to queue sync action:', error);
+    });
+  }
 
   return true;
 }

@@ -1,0 +1,146 @@
+/**
+ * Magic Link Email Template
+ * Professional, kid-friendly HTML email for authentication
+ */
+
+export function getMagicLinkEmailTemplate(magicLinkUrl: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Sign In to Kids Home Hub</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; background-color: #f5f7fa;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin: 0; padding: 0;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin: 0 auto; max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">
+
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 30px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0;">
+              <h1 style="margin: 0; padding: 0; color: #ffffff; font-size: 32px; font-weight: bold; letter-spacing: -0.5px;">
+                Kids Home Hub
+              </h1>
+              <p style="margin: 8px 0 0; padding: 0; color: #e9d5ff; font-size: 14px; font-weight: 500;">
+                Family Chore Management
+              </p>
+            </td>
+          </tr>
+
+          <!-- Greeting -->
+          <tr>
+            <td style="padding: 40px 40px 20px;">
+              <h2 style="margin: 0 0 16px; padding: 0; color: #1f2937; font-size: 24px; font-weight: 600;">
+                Welcome back!
+              </h2>
+              <p style="margin: 0; padding: 0; color: #4b5563; font-size: 16px; line-height: 24px;">
+                We received a request to sign in to your Kids Home Hub account. Click the button below to securely access your family's chore dashboard.
+              </p>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td style="padding: 20px 40px 30px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="text-align: center;">
+                    <a href="${magicLinkUrl}" style="display: inline-block; padding: 16px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); transition: all 0.3s ease;">
+                      Sign In to Kids Home Hub
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Plain Text Link -->
+          <tr>
+            <td style="padding: 0 40px 20px;">
+              <p style="margin: 0; padding: 0; color: #6b7280; font-size: 13px; line-height: 20px; text-align: center;">
+                Or copy and paste this link into your browser:
+              </p>
+              <p style="margin: 8px 0 0; padding: 12px; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; color: #667eea; font-size: 12px; word-break: break-all; text-align: center;">
+                ${magicLinkUrl}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Expiration Notice -->
+          <tr>
+            <td style="padding: 20px 40px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px;">
+                <tr>
+                  <td style="padding: 16px 20px;">
+                    <p style="margin: 0; padding: 0; color: #92400e; font-size: 14px; line-height: 20px;">
+                      <strong style="color: #78350f;">Security Notice:</strong> This link will expire in <strong>15 minutes</strong> for your protection. If it expires, simply request a new one.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 30px 40px 40px;">
+              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 0 0 24px;">
+              <p style="margin: 0 0 16px; padding: 0; color: #6b7280; font-size: 14px; line-height: 20px;">
+                <strong style="color: #4b5563;">Didn't request this?</strong><br>
+                If you didn't try to sign in, you can safely ignore this email. No changes will be made to your account.
+              </p>
+              <p style="margin: 0; padding: 0; color: #9ca3af; font-size: 12px; line-height: 18px;">
+                This is an automated message from Kids Home Hub. Please do not reply to this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Bottom Branding -->
+          <tr>
+            <td style="padding: 20px 40px; text-align: center; background-color: #f9fafb; border-radius: 0 0 12px 12px;">
+              <p style="margin: 0; padding: 0; color: #9ca3af; font-size: 12px; line-height: 18px;">
+                Made with care for families<br>
+                &copy; ${new Date().getFullYear()} Kids Home Hub. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `.trim();
+}
+
+/**
+ * Get plain text version of the magic link email (fallback)
+ */
+export function getMagicLinkEmailPlainText(magicLinkUrl: string): string {
+  return `
+Welcome back to Kids Home Hub!
+
+We received a request to sign in to your account.
+
+Click the link below to securely access your family's chore dashboard:
+${magicLinkUrl}
+
+Or copy and paste this link into your browser.
+
+SECURITY NOTICE: This link will expire in 15 minutes for your protection.
+If it expires, simply request a new one.
+
+Didn't request this?
+If you didn't try to sign in, you can safely ignore this email. No changes will be made to your account.
+
+---
+This is an automated message from Kids Home Hub. Please do not reply to this email.
+Made with care for families
+© ${new Date().getFullYear()} Kids Home Hub. All rights reserved.
+  `.trim();
+}
