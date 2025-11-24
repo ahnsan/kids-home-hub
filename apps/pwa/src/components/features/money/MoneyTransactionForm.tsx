@@ -37,8 +37,15 @@ export const MoneyTransactionForm: FunctionComponent = () => {
     error.value = null;
     success.value = false;
 
-    // Apply optimistic UI update FIRST (before API call)
+    // Check insufficient balance for money deduction and apply optimistic UI update
     const child = currentChild.value;
+    if (action.value === 'deduct' && child && amountValue > child.moneyTotal) {
+      error.value = `Not enough money. Current balance: £${child.moneyTotal.toFixed(2)}`;
+      isLoading.value = false;
+      return;
+    }
+
+    // Apply optimistic UI update FIRST (before API call)
     if (child) {
       const delta = action.value === 'add' ? amountValue : -amountValue;
       updateChildData(selectedChildId.value, {

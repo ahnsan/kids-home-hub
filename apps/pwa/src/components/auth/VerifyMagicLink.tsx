@@ -1,46 +1,76 @@
 /**
- * Magic link verification component
- * Handles the callback when user clicks the magic link
+ * Auth callback component for Supabase magic link verification
+ *
+ * Supabase automatically handles magic link verification when the user
+ * clicks the link. This component:
+ * 1. Shows a loading state while Supabase processes the auth callback
+ * 2. Detects session establishment
+ * 3. Redirects to the app or shows errors
+ *
+ * Note: With Supabase, the magic link includes auth tokens in the URL.
+ * The Supabase client automatically detects and processes them.
  */
 
 import { type FunctionComponent } from 'preact';
 import { useSignal, useSignalEffect } from '@preact/signals';
-import { verifyMagicLink } from '../../lib/auth';
-import { setUser, setAuthError } from '../../stores/authStore';
+import { getSession } from '../../lib/auth';
 
 export const VerifyMagicLink: FunctionComponent = () => {
   const isVerifying = useSignal(true);
   const error = useSignal<string | null>(null);
 
   useSignalEffect(() => {
-    const verifyToken = async () => {
+    const verifyAuth = async () => {
       try {
-        // Parse URL params
-        const params = new URLSearchParams(window.location.search);
-        const token = params.get('token');
-        const email = params.get('email');
+        console.log('[Verify] Checking for Supabase auth session');
 
-        if (!token || !email) {
-          error.value = 'Invalid verification link';
+        // Wait a moment for Supabase to process the auth callback
+        // Supabase client automatically detects auth tokens in URL
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Check if we have a session
+        const session = await getSession();
+
+        if (!session) {
+          console.error('[Verify] No session found after auth callback');
+          error.value = 'Authentication failed. Please try logging in again.';
           isVerifying.value = false;
           return;
         }
 
-        // Verify the magic link
-        const session = await verifyMagicLink(token, email);
-        setUser(session.user);
+        console.log('[Verify] Session established successfully');
+
+        // Get user from session
+        if (session.user) {
+          // The authStore will automatically update via the auth state listener
+          // But we can also manually trigger it here for immediate feedback
+          console.log('[Verify] User authenticated:', session.user.id);
+        }
 
         // Redirect to app
+        console.log('[Verify] Redirecting to app');
         window.location.href = '/';
       } catch (err) {
-        console.error('[Verify] Failed to verify magic link:', err);
-        error.value = 'Verification failed. Please try logging in again.';
-        setAuthError('Verification failed');
+        console.error('[Verify] Failed to verify authentication:', err);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        console.error('[Verify] Error details:', errorMessage);
+
+        // Provide user-friendly error messages
+        if (errorMessage.includes('expired')) {
+          error.value = 'This link has expired. Please request a new login link.';
+        } else if (errorMessage.includes('invalid')) {
+          error.value = 'Invalid authentication link. Please request a new login link.';
+        } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+          error.value = 'Network error. Please check your connection and try again.';
+        } else {
+          error.value = 'Authentication failed. Please try logging in again.';
+        }
+
         isVerifying.value = false;
       }
     };
 
-    void verifyToken();
+    void verifyAuth();
   });
 
   return (

@@ -6,7 +6,7 @@ import { type FunctionComponent, type ComponentChildren } from 'preact';
 import { clsx } from 'clsx';
 
 export interface ButtonProps {
-  variant?: 'primary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
   fullWidth?: boolean;
   disabled?: boolean;
@@ -40,6 +40,7 @@ export const Button: FunctionComponent<ButtonProps> = ({
 
   const variantStyles = {
     primary: 'bg-primary-500 text-white hover:bg-primary-600 shadow-sm',
+    secondary: 'bg-surface-100 text-surface-900 hover:bg-surface-200 border border-surface-300',
     ghost: 'bg-transparent text-primary-500 border border-primary-200 hover:bg-primary-50',
     danger: 'bg-error-500 text-white hover:bg-error-600 shadow-sm'
   };

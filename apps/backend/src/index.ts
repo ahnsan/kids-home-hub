@@ -41,6 +41,7 @@ const publicRoutes = app.basePath('/v1');
 // Authentication
 publicRoutes.post('/auth/magic-link', auth.sendMagicLink);
 publicRoutes.post('/auth/verify', auth.verifyMagicLink);
+publicRoutes.post('/auth/dev-login', auth.devLogin); // Development only
 
 // =============================================================================
 // PROTECTED ROUTES (Authentication required)

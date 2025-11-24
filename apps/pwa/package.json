@@ -20,6 +20,7 @@
     "@kids-home-hub/shared": "workspace:*",
     "@neondatabase/serverless": "^1.0.2",
     "@preact/signals": "^1.2.2",
+    "@supabase/supabase-js": "^2.84.0",
     "clsx": "^2.1.0",
     "dexie": "^3.2.4",
     "ky": "^1.1.3",

@@ -17,14 +17,16 @@ export async function getChildren(c: Context<{ Bindings: Env }>) {
     const sql = createDbConnection(c.env.DATABASE_URL);
 
     // Verify household access
-    const [household] = await sql`
+    const householdResult = await sql`
       SELECT id FROM households
       WHERE id = ${householdId}
         AND (owner_id = ${user.userId}
              OR id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId}
              ))
-    `;
+    ` as any[];
+
+    const household = householdResult[0];
 
     if (!household) {
       return c.json({ error: 'Household not found or unauthorized' }, 404);
@@ -62,25 +64,29 @@ export async function createChild(c: Context<{ Bindings: Env }>) {
     const sql = createDbConnection(c.env.DATABASE_URL);
 
     // Verify household access
-    const [household] = await sql`
+    const householdResult2 = await sql`
       SELECT id FROM households
       WHERE id = ${householdId}
         AND (owner_id = ${user.userId}
              OR id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId} AND role IN ('owner', 'parent')
              ))
-    `;
+    ` as any[];
+
+    const household = householdResult2[0];
 
     if (!household) {
       return c.json({ error: 'Household not found or unauthorized' }, 403);
     }
 
     // Create child
-    const [child] = await sql`
+    const childResult = await sql`
       INSERT INTO children (household_id, name, avatar, display_order)
       VALUES (${householdId}, ${name.trim()}, ${avatar || null}, ${displayOrder || 0})
       RETURNING id, household_id, name, avatar, money_total, points_total, screen_total, display_order, created_at, updated_at
-    `;
+    ` as any[];
+
+    const child = childResult[0];
 
     return c.json({ child }, 201);
   } catch (error) {
@@ -103,7 +109,7 @@ export async function updateChild(c: Context<{ Bindings: Env }>) {
     const sql = createDbConnection(c.env.DATABASE_URL);
 
     // Verify access to child
-    const [child] = await sql`
+    const childResult2 = await sql`
       SELECT c.id, c.household_id
       FROM children c
       JOIN households h ON h.id = c.household_id
@@ -112,7 +118,9 @@ export async function updateChild(c: Context<{ Bindings: Env }>) {
              OR h.id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId} AND role IN ('owner', 'parent')
              ))
-    `;
+    ` as any[];
+
+    const child = childResult2[0];
 
     if (!child) {
       return c.json({ error: 'Child not found or unauthorized' }, 404);
@@ -129,7 +137,7 @@ export async function updateChild(c: Context<{ Bindings: Env }>) {
     };
 
     // Update child
-    const [updatedChild] = await sql`
+    const updatedChildResult = await sql`
       UPDATE children
       SET name = ${updatedValues.name},
           avatar = ${updatedValues.avatar},
@@ -140,7 +148,9 @@ export async function updateChild(c: Context<{ Bindings: Env }>) {
           updated_at = NOW()
       WHERE id = ${childId}
       RETURNING id, household_id, name, avatar, money_total, points_total, screen_total, display_order, created_at, updated_at
-    `;
+    ` as any[];
+
+    const updatedChild = updatedChildResult[0];
 
     return c.json({ child: updatedChild });
   } catch (error) {
@@ -200,7 +210,7 @@ export async function createTransaction(c: Context<{ Bindings: Env }>) {
     const sql = createDbConnection(c.env.DATABASE_URL);
 
     // Verify access to child
-    const [child] = await sql`
+    const childResult3 = await sql`
       SELECT c.id, c.household_id
       FROM children c
       JOIN households h ON h.id = c.household_id
@@ -209,18 +219,22 @@ export async function createTransaction(c: Context<{ Bindings: Env }>) {
              OR h.id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId} AND role IN ('owner', 'parent')
              ))
-    `;
+    ` as any[];
+
+    const child = childResult3[0];
 
     if (!child) {
       return c.json({ error: 'Child not found or unauthorized' }, 403);
     }
 
     // Create transaction
-    const [transaction] = await sql`
+    const transactionResult = await sql`
       INSERT INTO transactions (child_id, type, action, amount, currency, reason, created_by)
       VALUES (${childId}, ${type}, ${action}, ${amount}, ${currency || null}, ${reason || null}, ${user.userId})
       RETURNING id, child_id, type, action, amount, currency, reason, created_by, created_at
-    `;
+    ` as any[];
+
+    const transaction = transactionResult[0];
 
     // Update child totals based on transaction type
     if (type === 'money') {

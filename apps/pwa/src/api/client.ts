@@ -1,9 +1,15 @@
 /**
  * Type-safe HTTP client with retry logic and offline queue
+ *
+ * Now integrated with Supabase Auth:
+ * - Automatically adds Supabase auth token to requests
+ * - Handles 401 errors by attempting token refresh
+ * - Falls back to offline queue on network errors
  */
 
 import ky, { type KyInstance } from 'ky';
 import { queueOfflineAction } from '../db/sync';
+import { getAuthToken } from '../lib/auth';
 
 /**
  * Create API client instance
@@ -25,7 +31,7 @@ const createApiClient = (): KyInstance => {
     },
     hooks: {
       beforeRequest: [
-        (request) => {
+        async (request) => {
           // Add timestamp for request tracking
           request.headers.set('X-Request-Time', Date.now().toString());
 
@@ -33,6 +39,16 @@ const createApiClient = (): KyInstance => {
           const deviceId = localStorage.getItem('deviceId');
           if (deviceId) {
             request.headers.set('X-Device-Id', deviceId);
+          }
+
+          // Add Supabase auth token if available
+          try {
+            const token = await getAuthToken();
+            if (token) {
+              request.headers.set('Authorization', `Bearer ${token}`);
+            }
+          } catch (error) {
+            console.error('[API] Failed to get auth token:', error);
           }
         }
       ],

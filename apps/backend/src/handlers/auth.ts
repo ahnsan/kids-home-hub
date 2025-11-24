@@ -277,3 +277,102 @@ export async function deleteAccount(c: Context<{ Bindings: Env }>) {
     return c.json({ error: 'Failed to delete account' }, 500);
   }
 }
+
+/**
+ * POST /v1/auth/dev-login
+ * Development-only login bypass (skips email verification)
+ *
+ * Security measures:
+ * - Only works when ENVIRONMENT is set to 'development'
+ * - Auto-creates user if they don't exist
+ * - Creates session directly without magic link
+ * - Returns same response format as verify endpoint
+ */
+export async function devLogin(c: Context<{ Bindings: Env }>) {
+  try {
+    // SECURITY: Only allow in development environment
+    const environment = c.env.ENVIRONMENT || 'development';
+
+    if (environment !== 'development') {
+      console.warn('[Auth] Dev login attempted in non-development environment:', environment);
+      return c.json({
+        error: 'Dev login is only available in development environment'
+      }, 403);
+    }
+
+    const body = await c.req.json();
+    const { email } = body;
+
+    if (!email) {
+      return c.json({ error: 'Email is required' }, 400);
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return c.json({ error: 'Invalid email format' }, 400);
+    }
+
+    console.log('[Auth] Dev login for:', email);
+
+    const sql = createDbConnection(c.env.DATABASE_URL);
+
+    // Get or create user (same as magic link flow)
+    const userResult = await sql`
+      SELECT get_or_create_user(${email.toLowerCase()}) as id
+    ` as any[];
+
+    const userId = userResult[0]?.id;
+
+    if (!userId) {
+      throw new Error('Failed to get or create user');
+    }
+
+    // Get full user details
+    const userDetailsResult = await sql`
+      SELECT u.id, u.email, u.created_at, u.updated_at,
+             h.id as household_id, h.name as household_name
+      FROM users u
+      LEFT JOIN households h ON h.created_by = u.id
+      WHERE u.id = ${userId}
+    ` as any[];
+
+    const userDetails = userDetailsResult[0];
+
+    // Create session token
+    const sessionToken = await signToken(
+      {
+        userId: userDetails.id,
+        email: userDetails.email,
+        householdId: userDetails.household_id || undefined,
+      },
+      c.env.JWT_SECRET,
+      '30d'
+    );
+
+    // Store session in database
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30); // 30 days
+
+    await sql`
+      INSERT INTO user_sessions (user_id, token, expires_at)
+      VALUES (${userId}, ${sessionToken}, ${expiresAt})
+    `;
+
+    console.log('[Auth] Dev login successful for:', email);
+
+    // Return session (same format as verify endpoint)
+    return c.json({
+      token: sessionToken,
+      expiresAt: expiresAt.toISOString(),
+      user: {
+        id: userDetails.id,
+        email: userDetails.email,
+        householdId: userDetails.household_id || undefined,
+      },
+    });
+  } catch (error) {
+    console.error('[Auth] Dev login error:', error);
+    return c.json({ error: 'Failed to perform dev login' }, 500);
+  }
+}

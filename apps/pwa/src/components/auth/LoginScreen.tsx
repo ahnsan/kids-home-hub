@@ -1,12 +1,18 @@
 /**
- * Login screen with magic link authentication
+ * Login screen with Supabase magic link authentication
+ *
+ * Now uses Supabase Auth for:
+ * - Magic link authentication (passwordless)
+ * - Automatic session management
+ * - Cross-tab synchronization
+ * - Optional OAuth providers
  */
 
 import { type FunctionComponent } from 'preact';
 import { useSignal } from '@preact/signals';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
-import { sendMagicLink } from '../../lib/auth';
+import { sendMagicLink, devLogin, isDevMode, signInWithOAuth } from '../../lib/auth';
 
 export const LoginScreen: FunctionComponent = () => {
   const email = useSignal('');
@@ -22,16 +28,35 @@ export const LoginScreen: FunctionComponent = () => {
       return;
     }
 
+    // Additional email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.value)) {
+      error.value = 'Please enter a valid email address';
+      return;
+    }
+
     isLoading.value = true;
     error.value = '';
 
     try {
+      console.log('[Login] Sending magic link to:', email.value);
       await sendMagicLink(email.value);
+      console.log('[Login] Magic link sent successfully');
       message.value = `We've sent a login link to ${email.value}`;
       step.value = 'sent';
     } catch (err) {
       console.error('[Login] Failed to send magic link:', err);
-      error.value = 'Failed to send login link. Please try again.';
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[Login] Error details:', errorMessage);
+
+      // Provide more specific error messages
+      if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        error.value = 'Network error. Please check your connection and try again.';
+      } else if (errorMessage.includes('rate limit')) {
+        error.value = 'Too many requests. Please wait a moment and try again.';
+      } else {
+        error.value = 'Failed to send login link. Please try again.';
+      }
     } finally {
       isLoading.value = false;
     }
@@ -48,6 +73,65 @@ export const LoginScreen: FunctionComponent = () => {
     localStorage.setItem('guest_mode', 'true');
     window.location.reload();
   };
+
+  const handleDevLogin = async () => {
+    // Validate email
+    if (!email.value || !email.value.includes('@')) {
+      error.value = 'Please enter a valid email address';
+      return;
+    }
+
+    // Additional email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.value)) {
+      error.value = 'Please enter a valid email address';
+      return;
+    }
+
+    isLoading.value = true;
+    error.value = '';
+
+    try {
+      console.log('[Login] Dev login for:', email.value);
+      await devLogin(email.value);
+      console.log('[Login] Dev login successful - magic link sent');
+      message.value = `Dev magic link sent to ${email.value}. Check your email.`;
+      step.value = 'sent';
+    } catch (err) {
+      console.error('[Login] Dev login failed:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      console.error('[Login] Error details:', errorMessage);
+
+      if (errorMessage.includes('403')) {
+        error.value = 'Dev login is only available in development environment.';
+      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+        error.value = 'Network error. Please check your connection and try again.';
+      } else {
+        error.value = 'Failed to log in. Please try again.';
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const handleOAuthLogin = async (provider: 'google' | 'github') => {
+    isLoading.value = true;
+    error.value = '';
+
+    try {
+      console.log('[Login] OAuth login with:', provider);
+      await signInWithOAuth(provider);
+      // Browser will redirect to OAuth provider
+    } catch (err) {
+      console.error('[Login] OAuth login failed:', err);
+      error.value = `Failed to sign in with ${provider}. Please try again.`;
+      isLoading.value = false;
+    }
+  };
+
+  // Expose handleOAuthLogin for potential future use (OAuth buttons)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _oauthLogin = handleOAuthLogin;
 
   return (
     <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-purple-50 p-4">
@@ -119,7 +203,34 @@ export const LoginScreen: FunctionComponent = () => {
               >
                 Send Magic Link
               </Button>
+
+              {/* Dev mode: Quick login button */}
+              {isDevMode() && (
+                <Button
+                  onClick={handleDevLogin}
+                  disabled={isLoading.value}
+                  loading={isLoading.value}
+                  variant="secondary"
+                  fullWidth
+                >
+                  Dev Login (Skip Email)
+                </Button>
+              )}
             </div>
+
+            {/* Dev mode indicator */}
+            {isDevMode() && (
+              <div class="bg-warning-50 border border-warning-200 rounded-lg p-3">
+                <div class="flex items-center gap-2">
+                  <svg class="w-5 h-5 text-warning-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <p class="text-sm font-medium text-warning-800">
+                    Development Mode: Email verification bypass enabled
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Divider */}
             <div class="relative">
