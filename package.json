@@ -68,7 +68,7 @@
     "profile:memory": "node --expose-gc --inspect scripts/ci/memory-profile.js"
   },
   "devDependencies": {
-    "@lhci/cli": "^0.13.0",
+    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.40.1",
     "@types/node": "^20.10.6",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
