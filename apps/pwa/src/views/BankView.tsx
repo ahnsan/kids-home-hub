@@ -35,8 +35,8 @@ export const BankView: FunctionComponent = () => {
     try {
       // Sync with backend - convert UI action ('remove') to API action ('deduct')
       await submitTransaction({
-        feature: 'money',
-        child: selectedChildId.value,
+        childId: selectedChildId.value,
+        type: 'money',
         action: data.action === 'remove' ? 'deduct' : data.action,
         amount: data.amount,
         currency: data.currency,

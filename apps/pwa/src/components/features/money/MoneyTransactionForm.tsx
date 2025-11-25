@@ -60,8 +60,8 @@ export const MoneyTransactionForm: FunctionComponent = () => {
     try {
       // Try to sync with backend
       await submitTransaction({
-        feature: 'money',
-        child: selectedChildId.value,
+        childId: selectedChildId.value,
+        type: 'money',
         action: action.value,
         amount: amountValue,
         currency: currency.value,

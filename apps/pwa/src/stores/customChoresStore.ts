@@ -4,8 +4,9 @@
 
 import { signal } from '@preact/signals';
 import { nanoid } from 'nanoid';
-import { isAuthenticated } from './authStore';
+import { isAuthenticated, user } from './authStore';
 import { syncService } from '../services/sync';
+import { api, isOnline } from '../api/client';
 
 export interface CustomChore {
   id: string;
@@ -71,8 +72,24 @@ export function addCustomChore(label: string, points: number): CustomChore {
   customChores.value = [...customChores.value, newChore];
   saveChores(customChores.value);
 
-  // Queue sync action if authenticated
-  if (isAuthenticated.value) {
+  // Make immediate API call if authenticated and online
+  if (isAuthenticated.value && isOnline()) {
+    const householdId = user.value?.householdId;
+    if (householdId) {
+      api.post('v1/chores', {
+        json: {
+          householdId,
+          label,
+          points,
+          icon: null,
+          category: null
+        }
+      }).catch(error => {
+        console.error('[CustomChores] Failed to sync add chore to API:', error);
+      });
+    }
+  } else if (isAuthenticated.value) {
+    // Queue sync action if authenticated but offline
     syncService.queueAction({
       type: 'add_chore',
       entityType: 'chore',
@@ -117,8 +134,15 @@ export function updateCustomChore(id: string, updates: { label?: string; points?
   customChores.value = newChores;
   saveChores(customChores.value);
 
-  // Queue sync action if authenticated
-  if (isAuthenticated.value) {
+  // Make immediate API call if authenticated and online
+  if (isAuthenticated.value && isOnline()) {
+    api.put(`v1/chores/${id}`, {
+      json: updates
+    }).catch(error => {
+      console.error('[CustomChores] Failed to sync update chore to API:', error);
+    });
+  } else if (isAuthenticated.value) {
+    // Queue sync action if authenticated but offline
     syncService.queueAction({
       type: 'update_chore',
       entityType: 'chore',
@@ -145,8 +169,13 @@ export function deleteCustomChore(id: string): boolean {
   customChores.value = customChores.value.filter(c => c.id !== id);
   saveChores(customChores.value);
 
-  // Queue sync action if authenticated
-  if (isAuthenticated.value) {
+  // Make immediate API call if authenticated and online
+  if (isAuthenticated.value && isOnline()) {
+    api.delete(`v1/chores/${id}`).catch(error => {
+      console.error('[CustomChores] Failed to sync delete chore to API:', error);
+    });
+  } else if (isAuthenticated.value) {
+    // Queue sync action if authenticated but offline
     syncService.queueAction({
       type: 'delete_chore',
       entityType: 'chore',

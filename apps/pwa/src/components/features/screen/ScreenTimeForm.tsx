@@ -57,8 +57,8 @@ export const ScreenTimeForm: FunctionComponent = () => {
     try {
       // Try to sync with backend
       await submitTransaction({
-        feature: 'screen',
-        child: selectedChildId.value,
+        childId: selectedChildId.value,
+        type: 'screen',
         action: action.value,
         amount: minutesValue,
         reason: reason.value,

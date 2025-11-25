@@ -15,7 +15,7 @@ import type {
  * Submit transaction (money, points, screen time)
  */
 export async function submitTransaction(data: TransactionRequest): Promise<void> {
-  await api.post('v1/transaction', {
+  await api.post('v1/transactions', {
     json: data
   });
 }

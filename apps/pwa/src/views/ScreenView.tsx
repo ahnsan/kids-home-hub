@@ -37,8 +37,8 @@ export const ScreenView: FunctionComponent = () => {
     try {
       // Sync with backend - convert UI action ('remove') to API action ('deduct')
       await submitTransaction({
-        feature: 'screen',
-        child: selectedChildId.value,
+        childId: selectedChildId.value,
+        type: 'screen',
         action: data.action === 'remove' ? 'deduct' : data.action,
         amount: data.amount,
         reason: data.reason

@@ -7,7 +7,7 @@ import { signal, computed, effect } from '@preact/signals';
 import type { Child, ChildId } from '@kids-home-hub/shared';
 import { isAuthenticated, user } from './authStore';
 import { syncService } from '../services/sync';
-import { api } from '../api/client';
+import { api, isOnline } from '../api/client';
 
 /**
  * Selected child ID
@@ -73,13 +73,24 @@ export function selectChild(childId: ChildId): void {
  * Update child data
  */
 export function updateChildData(childId: ChildId, updates: Partial<Child>): void {
+  // Optimistically update local state first
   children.value = children.value.map(child =>
     child.id === childId ? { ...child, ...updates } : child
   );
   void saveChildren(children.value);
 
-  // Queue sync action if authenticated
-  if (isAuthenticated.value) {
+  // If authenticated and online, make immediate API call
+  if (isAuthenticated.value && isOnline()) {
+    api.patch(`v1/children/${childId}`, {
+      json: updates
+    }).then(() => {
+      console.log(`[Store] Child ${childId} updated on server immediately`);
+    }).catch(error => {
+      console.error(`[Store] Failed to update child ${childId} on server:`, error);
+      // Keep optimistic local update - data will sync later via background sync
+    });
+  } else if (isAuthenticated.value) {
+    // Offline but authenticated - queue for background sync
     syncService.queueAction({
       type: 'update_child',
       entityType: 'child',
@@ -107,6 +118,7 @@ export function addChild(name: string, avatar: string): void {
     screenTotal: 0
   };
 
+  // Optimistically update local state first
   children.value = [...children.value, newChild];
   void saveChildren(children.value);
 
@@ -115,8 +127,23 @@ export function addChild(name: string, avatar: string): void {
     selectedChildId.value = children.value[0]!.id;
   }
 
-  // Queue sync action if authenticated
-  if (isAuthenticated.value) {
+  // If authenticated and online, make immediate API call
+  if (isAuthenticated.value && isOnline() && user.value?.householdId) {
+    api.post('v1/children', {
+      json: {
+        householdId: user.value.householdId,
+        name: newChild.name,
+        avatar: newChild.avatar,
+        displayOrder: 0
+      }
+    }).then(() => {
+      console.log(`[Store] Child ${name} created on server immediately`);
+    }).catch(error => {
+      console.error(`[Store] Failed to create child ${name} on server:`, error);
+      // Keep optimistic local update - data will sync later via background sync
+    });
+  } else if (isAuthenticated.value) {
+    // Offline but authenticated, or no householdId yet - queue for background sync
     syncService.queueAction({
       type: 'add_child',
       entityType: 'child',
@@ -132,6 +159,7 @@ export function addChild(name: string, avatar: string): void {
  * Remove a child
  */
 export function removeChild(childId: ChildId): void {
+  // Optimistically update local state first
   children.value = children.value.filter(child => child.id !== childId);
   void saveChildren(children.value);
 
@@ -140,8 +168,16 @@ export function removeChild(childId: ChildId): void {
     selectedChildId.value = children.value[0]!.id;
   }
 
-  // Queue sync action if authenticated
-  if (isAuthenticated.value) {
+  // If authenticated and online, make immediate API call
+  if (isAuthenticated.value && isOnline()) {
+    api.delete(`v1/children/${childId}`).then(() => {
+      console.log(`[Store] Child ${childId} deleted on server immediately`);
+    }).catch(error => {
+      console.error(`[Store] Failed to delete child ${childId} on server:`, error);
+      // Keep optimistic local update - data will sync later via background sync
+    });
+  } else if (isAuthenticated.value) {
+    // Offline but authenticated - queue for background sync
     syncService.queueAction({
       type: 'remove_child',
       entityType: 'child',

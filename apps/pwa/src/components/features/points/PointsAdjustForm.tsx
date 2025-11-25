@@ -51,8 +51,8 @@ export const PointsAdjustForm: FunctionComponent = () => {
     try {
       // Try to sync with backend
       await submitTransaction({
-        feature: 'points',
-        child: selectedChildId.value,
+        childId: selectedChildId.value,
+        type: 'points',
         action: action.value,
         amount: pointsValue,
         reason: reason.value,

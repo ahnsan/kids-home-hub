@@ -10,12 +10,12 @@ import type { ChoreId } from './chore';
  * Transaction request (money, points, screen)
  */
 export interface TransactionRequest {
-  feature: TransactionFeature;
-  child: ChildId;
+  childId: ChildId;
+  type: TransactionFeature;
   action: TransactionAction;
   amount: number;
   currency?: Currency;
-  reason: string;
+  reason?: string;
 }
 
 /**

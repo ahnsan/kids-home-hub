@@ -35,8 +35,8 @@ export const PointsView: FunctionComponent = () => {
     try {
       // Sync with backend - convert UI action ('remove') to API action ('deduct')
       await submitTransaction({
-        feature: 'points',
-        child: selectedChildId.value,
+        childId: selectedChildId.value,
+        type: 'points',
         action: data.action === 'remove' ? 'deduct' : data.action,
         amount: data.amount,
         reason: data.reason
