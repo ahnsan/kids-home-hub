@@ -44,9 +44,9 @@ export const SyncIndicator: FunctionComponent = () => {
           }
         }, 3000);
       } else if (syncStatus === 'pending') {
-        // Pending sync - don't show error, just indicate offline
-        status.value = 'offline';
-        isVisible.value = true;
+        // Pending sync - hide indicator instead of showing misleading "Offline"
+        // The sync will happen automatically via periodic sync
+        isVisible.value = false;
       } else if (!navigator.onLine) {
         status.value = 'offline';
         isVisible.value = true;
