@@ -78,7 +78,7 @@ export const AvatarUpload: FunctionComponent<AvatarUploadProps> = ({
             type="file"
             accept="image/*"
             class="hidden"
-            onChange={handleFileSelect}
+            onChange={(e) => { void handleFileSelect(e); }}
             disabled={isUploading}
           />
           {isUploading ? (

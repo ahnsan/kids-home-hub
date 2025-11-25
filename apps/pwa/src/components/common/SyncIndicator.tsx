@@ -18,9 +18,11 @@ export const SyncIndicator: FunctionComponent = () => {
 
   // Check sync status periodically
   useSignalEffect(() => {
+    // eslint-disable-next-line no-console
     console.log('[SyncIndicator] Checking status - isAuthenticated:', isAuthenticated.value);
 
     if (!isAuthenticated.value) {
+      // eslint-disable-next-line no-console
       console.log('[SyncIndicator] Not authenticated - hiding indicator');
       status.value = 'offline';
       isVisible.value = false;
@@ -29,6 +31,7 @@ export const SyncIndicator: FunctionComponent = () => {
 
     const checkStatus = () => {
       const syncStatus = syncService.getSyncStatus();
+      // eslint-disable-next-line no-console
       console.log('[SyncIndicator] Sync status from service:', syncStatus);
 
       if (syncStatus === 'syncing') {
