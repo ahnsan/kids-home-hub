@@ -24,8 +24,8 @@ export const Avatar: FunctionComponent<AvatarProps> = ({
     lg: 'w-16 h-16 text-4xl'
   };
 
-  // Check if src is an emoji (single character or emoji)
-  const isEmoji = src.length <= 4 && !src.startsWith('http');
+  // Check if src is an emoji (not a URL or base64)
+  const isEmoji = src.length <= 4 && !src.startsWith('http') && !src.startsWith('data:');
 
   if (isEmoji) {
     // Render emoji avatar

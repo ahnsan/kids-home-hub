@@ -5,6 +5,7 @@
 import { type FunctionComponent } from 'preact';
 import { useState } from 'preact/hooks';
 import { Card } from '../components/common/Card';
+import { AvatarUpload } from '../components/common/AvatarUpload';
 import { currentChild, selectedChildId, updateChildData } from '../stores';
 import { TransactionSheet } from '../components/transactions/TransactionSheet';
 import { submitTransaction } from '../api/endpoints';
@@ -58,10 +59,14 @@ export const BankView: FunctionComponent = () => {
 
       <Card>
         <div class="flex items-center gap-3 mb-4">
-          <img
+          <AvatarUpload
             src={currentChild.value.avatar}
             alt={currentChild.value.name}
-            class="w-12 h-12 rounded-full"
+            size="md"
+            editable={true}
+            onImageChange={(imageData) => {
+              updateChildData(selectedChildId.value, { avatar: imageData });
+            }}
           />
           <div>
             <h3 class="font-semibold text-gray-900">{currentChild.value.name}'s Bank</h3>

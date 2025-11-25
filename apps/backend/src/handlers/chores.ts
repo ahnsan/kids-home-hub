@@ -25,7 +25,7 @@ export async function getChores(c: Context<{ Bindings: Env }>) {
     const [household] = await sql`
       SELECT id FROM households
       WHERE id = ${householdId}
-        AND (owner_id = ${user.userId}
+        AND (created_by = ${user.userId}
              OR id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId}
              ))
@@ -70,7 +70,7 @@ export async function createChore(c: Context<{ Bindings: Env }>) {
     const [household] = await sql`
       SELECT id FROM households
       WHERE id = ${householdId}
-        AND (owner_id = ${user.userId}
+        AND (created_by = ${user.userId}
              OR id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId} AND role IN ('owner', 'parent')
              ))
@@ -113,7 +113,7 @@ export async function updateChore(c: Context<{ Bindings: Env }>) {
       FROM chores ch
       JOIN households h ON h.id = ch.household_id
       WHERE ch.id = ${choreId}
-        AND (h.owner_id = ${user.userId}
+        AND (h.created_by = ${user.userId}
              OR h.id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId} AND role IN ('owner', 'parent')
              ))
@@ -159,7 +159,7 @@ export async function deleteChore(c: Context<{ Bindings: Env }>) {
       WHERE ch.id = ${choreId}
         AND ch.household_id = h.id
         AND ch.is_default = false
-        AND (h.owner_id = ${user.userId}
+        AND (h.created_by = ${user.userId}
              OR h.id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId} AND role IN ('owner', 'parent')
              ))
@@ -201,7 +201,7 @@ export async function completeChore(c: Context<{ Bindings: Env }>) {
       JOIN chores ch ON ch.household_id = h.id
       WHERE c.id = ${childId}
         AND ch.id = ${choreId}
-        AND (h.owner_id = ${user.userId}
+        AND (h.created_by = ${user.userId}
              OR h.id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId} AND role IN ('owner', 'parent')
              ))
@@ -267,7 +267,7 @@ export async function getChoreCompletions(c: Context<{ Bindings: Env }>) {
         JOIN households h ON h.id = c.household_id
         WHERE cc.child_id = ${childId}
           ${weekStart ? sql`AND cc.week_start = ${weekStart}` : sql``}
-          AND (h.owner_id = ${user.userId}
+          AND (h.created_by = ${user.userId}
                OR h.id IN (
                  SELECT household_id FROM household_members WHERE user_id = ${user.userId}
                ))
@@ -283,7 +283,7 @@ export async function getChoreCompletions(c: Context<{ Bindings: Env }>) {
         WHERE c.household_id = ${householdId}
           ${weekStart ? sql`AND cc.week_start = ${weekStart}` : sql``}
           AND (c.household_id IN (
-            SELECT id FROM households WHERE owner_id = ${user.userId}
+            SELECT id FROM households WHERE created_by = ${user.userId}
             UNION
             SELECT household_id FROM household_members WHERE user_id = ${user.userId}
           ))

@@ -51,7 +51,7 @@ export async function sync(c: Context<{ Bindings: Env }>) {
     const households = await sql`
       SELECT h.id
       FROM households h
-      WHERE h.owner_id = ${user.userId}
+      WHERE h.created_by = ${user.userId}
          OR h.id IN (
            SELECT household_id FROM household_members WHERE user_id = ${user.userId}
          )

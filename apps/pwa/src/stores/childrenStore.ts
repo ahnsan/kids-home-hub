@@ -5,8 +5,9 @@
 
 import { signal, computed, effect } from '@preact/signals';
 import type { Child, ChildId } from '@kids-home-hub/shared';
-import { isAuthenticated } from './authStore';
+import { isAuthenticated, user } from './authStore';
 import { syncService } from '../services/sync';
+import { api } from '../api/client';
 
 /**
  * Selected child ID
@@ -155,7 +156,7 @@ export function removeChild(childId: ChildId): void {
 /**
  * Replace all children (used during onboarding)
  */
-export function setChildren(newChildren: Array<{ name: string; avatar: string }>): void {
+export async function setChildren(newChildren: Array<{ name: string; avatar: string }>): Promise<void> {
   children.value = newChildren.map((child) => ({
     id: child.name.toLowerCase().replace(/\s+/g, '_') as ChildId,
     name: child.name,
@@ -164,7 +165,69 @@ export function setChildren(newChildren: Array<{ name: string; avatar: string }>
     pointsTotal: 0,
     screenTotal: 0
   }));
-  void saveChildren(children.value);
+
+  // Save locally first
+  await saveChildren(children.value);
+
+  // If authenticated, ensure we have a household and sync
+  if (isAuthenticated.value) {
+    try {
+      // Wait for householdId with retries if needed (it might still be loading after login)
+      let retries = 0;
+      const maxRetries = 5;
+
+      while (!user.value?.householdId && retries < maxRetries) {
+        console.log(`[ChildrenStore] Waiting for householdId (attempt ${retries + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        retries++;
+      }
+
+      if (!user.value?.householdId) {
+        console.error('[ChildrenStore] No householdId after retries - creating household first');
+        // Try to ensure household exists
+        const { api: apiClient } = await import('../api/client');
+        const householdsResponse = await apiClient.get('v1/households').json<{ households: any[] }>();
+
+        if (householdsResponse.households.length === 0) {
+          // Create default household
+          const createResponse = await apiClient.post('v1/households', {
+            json: { name: 'My Family' }
+          }).json<{ household: any }>();
+
+          if (user.value) {
+            user.value = { ...user.value, householdId: createResponse.household.id };
+          }
+        } else if (user.value) {
+          user.value = { ...user.value, householdId: householdsResponse.households[0].id };
+        }
+      }
+
+      if (user.value?.householdId) {
+        console.log('[ChildrenStore] Syncing children to backend...');
+
+        // Create children on backend
+        for (const child of children.value) {
+          await api.post('v1/children', {
+            json: {
+              householdId: user.value.householdId,
+              name: child.name,
+              avatar: child.avatar,
+              displayOrder: 0
+            }
+          });
+        }
+
+        console.log('[ChildrenStore] Children synced to backend successfully');
+      } else {
+        console.error('[ChildrenStore] Still no householdId - children saved locally only');
+      }
+    } catch (error) {
+      console.error('[ChildrenStore] Failed to sync children to backend:', error);
+      // Don't throw - children are still saved locally for offline use
+    }
+  } else {
+    console.log('[ChildrenStore] Not authenticated - children saved locally only');
+  }
 
   // Select the first child
   if (children.value.length > 0) {

@@ -4,11 +4,12 @@
  */
 
 import { api } from '../api/client';
-import { isAuthenticated } from '../lib/auth';
+import { isAuthenticated as isAuthenticatedSignal } from '../stores/authStore';
 import type { Child, QueuedAction } from '@kids-home-hub/shared';
 import { db, getDeviceId } from '../db/schema';
 import { mergeById } from '../lib/syncUtils';
 import type { CustomChore } from '../stores/customChoresStore';
+import { user } from '../stores/authStore';
 
 interface FullSyncResponse {
   children: Child[];
@@ -54,7 +55,16 @@ export class SyncService {
    * Check if we can sync (user is authenticated and online)
    */
   private canSync(): boolean {
-    return isAuthenticated() && navigator.onLine;
+    const authenticated = isAuthenticatedSignal.value;
+    const online = navigator.onLine;
+
+    console.log('[Sync] canSync check:', {
+      authenticated,
+      online,
+      canSync: authenticated && online
+    });
+
+    return authenticated && online;
   }
 
   /**
@@ -141,8 +151,13 @@ export class SyncService {
       console.log('[Sync] Syncing children...');
       const localChildren = this.getLocalChildren();
 
+      if (!user.value?.householdId) {
+        console.warn('[Sync] No householdId - using local children');
+        return this.getLocalChildren();
+      }
+
       const response = await api
-        .get('v1/children')
+        .get(`v1/households/${user.value.householdId}/children`)
         .json<{ children: Child[] }>();
 
       // Merge with local data using last-write-wins
@@ -264,7 +279,7 @@ export class SyncService {
       console.log(`[Sync] Action queued: ${action.type} for ${action.entityType}`);
 
       // Trigger sync if online
-      if (navigator.onLine && isAuthenticated()) {
+      if (this.canSync()) {
         // Don't await - let it run in background
         this.fullSync().catch((error) => {
           console.error('[Sync] Background sync failed:', error);
@@ -398,22 +413,33 @@ export class SyncService {
    * Get sync status
    */
   getSyncStatus(): 'synced' | 'syncing' | 'pending' | 'offline' {
+    console.log('[Sync] getSyncStatus check:', {
+      'navigator.onLine': navigator.onLine,
+      'isAuthenticated': isAuthenticatedSignal.value,
+      'syncInProgress': this.syncInProgress
+    });
+
     if (!navigator.onLine) {
+      console.log('[Sync] Status: offline (no network)');
       return 'offline';
     }
 
-    if (!isAuthenticated()) {
+    if (!isAuthenticatedSignal.value) {
+      console.log('[Sync] Status: offline (not authenticated)');
       return 'offline';
     }
 
     if (this.syncInProgress) {
+      console.log('[Sync] Status: syncing');
       return 'syncing';
     }
 
     if (this.needsSync()) {
+      console.log('[Sync] Status: pending');
       return 'pending';
     }
 
+    console.log('[Sync] Status: synced');
     return 'synced';
   }
 

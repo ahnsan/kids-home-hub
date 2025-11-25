@@ -9,6 +9,9 @@ export * from './customChoresStore';
 export * from './onboardingStore';
 export * from './authStore';
 
+// Export specific onboarding functions that may be used across stores
+export { markOnboardingCompleteIfHasData } from './onboardingStore';
+
 import { initializeChildStore } from './childrenStore';
 import { initializeNavigationStore } from './navigationStore';
 import { initializeOfflineStore } from './offlineStore';

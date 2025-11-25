@@ -52,14 +52,15 @@ export const OnboardingFlow: FunctionComponent<OnboardingFlowProps> = ({ onCompl
     nextStep();
   };
 
-  const handleCompleteOnboarding = () => {
+  const handleCompleteOnboarding = async () => {
     // Create actual children from temp children
     const childrenToCreate = tempChildren.value.map(child => ({
       name: child.name,
       avatar: child.emoji // Using emoji as avatar
     }));
 
-    setChildren(childrenToCreate);
+    // Wait for children to sync to backend
+    await setChildren(childrenToCreate);
 
     // Mark onboarding as complete
     completeOnboarding();

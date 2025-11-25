@@ -20,7 +20,7 @@ export interface AuthGuardProps {
 function hasLocalData(): boolean {
   const childrenData = children.value;
   const choresData = localStorage.getItem('customChores');
-  const onboardingComplete = localStorage.getItem('onboarding_completed');
+  const onboardingComplete = localStorage.getItem('onboarding_complete');
 
   // Has local data if:
   // 1. Has completed onboarding

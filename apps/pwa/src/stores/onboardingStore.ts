@@ -250,4 +250,29 @@ export function initializeOnboardingStore(): void {
   currentStep.value = (tempState.currentStep as OnboardingStep) || 1;
   tempChildren.value = tempState.tempChildren || [];
   choresConfigured.value = tempState.choresConfigured || false;
+
+  console.log('[Onboarding] Initialized - Status:', status);
+}
+
+/**
+ * Mark onboarding as complete based on external state (e.g., children exist)
+ * Used when children are loaded from backend
+ */
+export function markOnboardingCompleteIfHasData(): void {
+  try {
+    // Import here to avoid circular dependency
+    const childrenData = localStorage.getItem('children');
+
+    if (childrenData) {
+      const children = JSON.parse(childrenData);
+      if (children && children.length > 0) {
+        console.log('[Onboarding] Found existing children, marking onboarding complete');
+        localStorage.setItem(STORAGE_KEY, 'true');
+        onboardingComplete.value = true;
+        clearTempState();
+      }
+    }
+  } catch (error) {
+    console.error('[Onboarding] Failed to check for existing data:', error);
+  }
 }

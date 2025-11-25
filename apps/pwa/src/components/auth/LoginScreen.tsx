@@ -130,7 +130,7 @@ export const LoginScreen: FunctionComponent = () => {
   };
 
   // Expose handleOAuthLogin for potential future use (OAuth buttons)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-expect-error - Reserved for future OAuth implementation
   const _oauthLogin = handleOAuthLogin;
 
   return (

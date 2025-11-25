@@ -5,7 +5,9 @@
 import { type FunctionComponent } from 'preact';
 import type { Child } from '@kids-home-hub/shared';
 import { Card } from '../common/Card';
+import { AvatarUpload } from '../common/AvatarUpload';
 import { clsx } from 'clsx';
+import { updateChildData } from '../../stores';
 
 export interface ChildCardProps {
   child: Child;
@@ -31,10 +33,15 @@ export const ChildCard: FunctionComponent<ChildCardProps> = ({
         {/* Header with Avatar and Name */}
         <div class="flex items-center gap-3 mb-4">
           <div class="relative">
-            <img
+            <AvatarUpload
               src={child.avatar}
               alt={child.name}
-              class="w-14 h-14 rounded-full ring-2 ring-white shadow-sm"
+              size="lg"
+              editable={true}
+              onImageChange={(imageData) => {
+                updateChildData(child.id, { avatar: imageData });
+              }}
+              class="ring-2 ring-white shadow-sm"
             />
             {isSelected && (
               <div class="absolute -top-1 -right-1 w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center ring-2 ring-white">

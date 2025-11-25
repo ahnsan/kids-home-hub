@@ -18,7 +18,10 @@ export const SyncIndicator: FunctionComponent = () => {
 
   // Check sync status periodically
   useSignalEffect(() => {
+    console.log('[SyncIndicator] Checking status - isAuthenticated:', isAuthenticated.value);
+
     if (!isAuthenticated.value) {
+      console.log('[SyncIndicator] Not authenticated - hiding indicator');
       status.value = 'offline';
       isVisible.value = false;
       return;
@@ -26,6 +29,7 @@ export const SyncIndicator: FunctionComponent = () => {
 
     const checkStatus = () => {
       const syncStatus = syncService.getSyncStatus();
+      console.log('[SyncIndicator] Sync status from service:', syncStatus);
 
       if (syncStatus === 'syncing') {
         status.value = 'syncing';
@@ -57,7 +61,7 @@ export const SyncIndicator: FunctionComponent = () => {
     };
 
     checkStatus();
-    const interval = setInterval(checkStatus, 5000);
+    const interval = setInterval(() => checkStatus(), 5000);
 
     return () => clearInterval(interval);
   });
@@ -193,14 +197,16 @@ export const SyncIndicator: FunctionComponent = () => {
             {lastSyncTime.value}
           </div>
           <button
-            onClick={async () => {
+            onClick={() => {
               status.value = 'syncing';
-              try {
-                await syncService.fullSync();
-                status.value = 'synced';
-              } catch (error) {
-                status.value = 'error';
-              }
+              syncService.fullSync()
+                .then(() => {
+                  status.value = 'synced';
+                })
+                .catch((error) => {
+                  console.error('[SyncIndicator] Manual sync failed:', error);
+                  status.value = 'error';
+                });
             }}
             class="mt-2 w-full px-3 py-1.5 bg-primary-500 text-white text-xs font-medium rounded-lg hover:bg-primary-600 transition-colors"
           >

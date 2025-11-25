@@ -12,6 +12,8 @@ import { signal, computed } from '@preact/signals';
 import type { User } from '@kids-home-hub/shared';
 import type { Session } from '@supabase/supabase-js';
 import { getCurrentUser, onAuthStateChange, getSession } from '../lib/auth';
+import { api } from '../api/client';
+import { children } from './childrenStore';
 
 /**
  * User signal
@@ -44,6 +46,94 @@ export const isAuthenticated = computed(() => user.value !== null && session.val
 export const hasHousehold = computed(() => user.value?.householdId !== undefined);
 
 /**
+ * Ensure user has a household, create one if needed
+ */
+async function ensureHouseholdExists(): Promise<void> {
+  try {
+    // Check if user already has a household
+    const response = await api.get('v1/households').json<{ households: any[] }>();
+
+    if (response.households.length === 0) {
+      // Create default household
+      console.log('[AuthStore] Creating default household');
+      const createResponse = await api.post('v1/households', {
+        json: { name: 'My Family' }
+      }).json<{ household: any }>();
+
+      // Update user object with householdId
+      if (user.value) {
+        user.value = { ...user.value, householdId: createResponse.household.id };
+      }
+      console.log('[AuthStore] Household created:', createResponse.household.id);
+    } else {
+      // Use first household
+      if (user.value) {
+        user.value = { ...user.value, householdId: response.households[0].id };
+      }
+      console.log('[AuthStore] Using existing household:', response.households[0].id);
+    }
+  } catch (error) {
+    console.error('[AuthStore] Failed to ensure household exists:', error);
+  }
+}
+
+/**
+ * Load children from backend after authentication
+ */
+async function loadChildrenFromBackend(): Promise<void> {
+  try {
+    // Wait for householdId with retries (it might still be loading)
+    let retries = 0;
+    const maxRetries = 5;
+
+    while (!user.value?.householdId && retries < maxRetries) {
+      console.log(`[AuthStore] Waiting for householdId (attempt ${retries + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+      retries++;
+    }
+
+    if (!user.value?.householdId) {
+      console.error('[AuthStore] No householdId after retries - cannot load children');
+      return;
+    }
+
+    const response = await api
+      .get(`v1/households/${user.value.householdId}/children`)
+      .json<{ children: any[] }>();
+
+    console.log('[AuthStore] Loaded children from backend:', response.children.length);
+
+    // Update childrenStore with server data
+    children.value = response.children.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      avatar: c.avatar,
+      moneyTotal: c.money_total || 0,
+      pointsTotal: c.points_total || 0,
+      screenTotal: c.screen_total || 0
+    }));
+
+    // Also save to localStorage for offline access
+    localStorage.setItem('children', JSON.stringify(children.value));
+
+    // If user has children from backend, mark onboarding as complete
+    if (response.children.length > 0) {
+      console.log('[AuthStore] User has children - marking onboarding complete');
+      localStorage.setItem('onboarding_complete', 'true');
+
+      // Import and call the onboarding store function to update its state
+      // This must be done dynamically to avoid circular dependencies
+      const { onboardingComplete } = await import('./onboardingStore');
+      onboardingComplete.value = true;
+    }
+  } catch (error) {
+    console.error('[AuthStore] Failed to load children from backend:', error);
+    // Re-throw so callers know about the failure
+    throw error;
+  }
+}
+
+/**
  * Initialize auth store from Supabase session
  *
  * This function:
@@ -54,8 +144,10 @@ export const hasHousehold = computed(() => user.value?.householdId !== undefined
 export function initializeAuthStore(): void {
   console.log('[AuthStore] Initializing with Supabase Auth');
 
-  // Load initial session
-  void loadSession();
+  // Load initial session - awaited within an IIFE to ensure sequential loading
+  (async () => {
+    await loadSession();
+  })();
 
   // Listen to auth state changes
   const unsubscribe = onAuthStateChange(async (event, newSession) => {
@@ -67,8 +159,18 @@ export function initializeAuthStore(): void {
     // Handle different auth events
     switch (event) {
       case 'SIGNED_IN':
-        console.log('[AuthStore] User signed in');
+        console.log('[AuthStore] 1. User signed in - Starting auth sequence');
         await loadUserData();
+        console.log('[AuthStore] 2. User data loaded');
+        await ensureHouseholdExists();
+        console.log('[AuthStore] 3. Household ensured');
+        try {
+          await loadChildrenFromBackend();
+          console.log('[AuthStore] 4. Children loaded from backend - count:', children.value.length);
+        } catch (error) {
+          console.error('[AuthStore] 4. Failed to load children from backend:', error);
+          // Continue - user can still use the app
+        }
         break;
 
       case 'SIGNED_OUT':
@@ -107,9 +209,19 @@ async function loadSession(): Promise<void> {
     const currentSession = await getSession();
 
     if (currentSession) {
-      console.log('[AuthStore] Session found');
+      console.log('[AuthStore] Session found - Restoring user data');
       session.value = currentSession;
       await loadUserData();
+      console.log('[AuthStore] User data restored');
+      await ensureHouseholdExists();
+      console.log('[AuthStore] Household ensured');
+      try {
+        await loadChildrenFromBackend();
+        console.log('[AuthStore] Children loaded from backend - count:', children.value.length);
+      } catch (error) {
+        console.error('[AuthStore] Failed to load children from backend:', error);
+        // Continue - user can still use the app
+      }
     } else {
       console.log('[AuthStore] No session found');
       user.value = null;

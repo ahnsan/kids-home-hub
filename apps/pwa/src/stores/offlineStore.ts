@@ -60,6 +60,21 @@ export function setSyncing(syncing: boolean): void {
  * Initialize online/offline listeners
  */
 export function initializeOfflineStore(): void {
-  window.addEventListener('online', () => setOnlineStatus(true));
-  window.addEventListener('offline', () => setOnlineStatus(false));
+  console.log('[OfflineStore] Initializing - current navigator.onLine:', navigator.onLine);
+
+  // Set initial state
+  isOnline.value = navigator.onLine;
+
+  // Listen to browser online/offline events
+  window.addEventListener('online', () => {
+    console.log('[OfflineStore] Browser went online');
+    setOnlineStatus(true);
+  });
+
+  window.addEventListener('offline', () => {
+    console.log('[OfflineStore] Browser went offline');
+    setOnlineStatus(false);
+  });
+
+  console.log('[OfflineStore] Initialized successfully');
 }

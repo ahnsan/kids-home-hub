@@ -92,8 +92,11 @@ kids-home-hub/
 - **Playwright** - End-to-end testing
 
 ### Backend
-- **Cloudflare Workers** - Edge computing platform
-- **Cloudflare KV** - Distributed key-value storage
+- **Supabase** - PostgreSQL database with real-time capabilities
+- **Supabase Auth** - Built-in authentication with magic links
+- **Row Level Security** - Database-level authorization
+- **Cloudflare Workers** - Edge computing platform (legacy)
+- **Cloudflare KV** - Distributed key-value storage (legacy)
 
 ### Development
 - **pnpm Workspaces** - Monorepo management
@@ -104,15 +107,28 @@ kids-home-hub/
 
 ## Documentation
 
-- **[Setup Guide](./SETUP_GUIDE.md)** - Complete installation instructions
+### Getting Started
+- **[Supabase Quick Start](./SUPABASE_QUICK_START.md)** - Get started in 15 minutes (RECOMMENDED)
+- **[Setup Guide](./SETUP_GUIDE.md)** - Original installation instructions
 - **[Build Summary](./BUILD_COMPLETE_SUMMARY.md)** - What's been built (85% complete)
+
+### Supabase Migration (New Backend)
+- **[Quick Start Guide](./SUPABASE_QUICK_START.md)** - Setup Supabase in 15 minutes
+- **[Testing Guide](./SUPABASE_TESTING_GUIDE.md)** - Comprehensive testing checklist
+- **[Deployment Guide](./SUPABASE_DEPLOYMENT.md)** - Production deployment instructions
+- **[Migration Guide](./SUPABASE_MIGRATION_GUIDE.md)** - Complete migration documentation
+- **[Final Checklist](./SUPABASE_FINAL_CHECKLIST.md)** - Pre-deployment verification
+
+### Technical Documentation
 - **[Implementation Details](./FRONTEND_IMPLEMENTATION_COMPLETE.md)** - Technical architecture
 - **[PWA README](./apps/pwa/README.md)** - PWA-specific documentation
+- **[API Documentation](./API.md)** - API reference
 
 ### Key Files
-- `SETUP_GUIDE.md` - Step-by-step setup (start here!)
+- `SUPABASE_QUICK_START.md` - Setup Supabase backend (START HERE!)
+- `SUPABASE_TESTING_GUIDE.md` - Test everything works
+- `SUPABASE_DEPLOYMENT.md` - Deploy to production
 - `BUILD_COMPLETE_SUMMARY.md` - Progress summary
-- `FRONTEND_IMPLEMENTATION_COMPLETE.md` - Architecture decisions
 - `apps/pwa/README.md` - PWA features and commands
 
 ## Development
@@ -121,7 +137,8 @@ kids-home-hub/
 
 - Node.js >= 18.0.0
 - pnpm >= 8.0.0
-- Cloudflare account (for deployment)
+- Supabase account (for database and auth) - [Sign up free](https://supabase.com)
+- Cloudflare account (for PWA deployment) - [Sign up free](https://dash.cloudflare.com/sign-up)
 
 ### Setup
 
@@ -130,25 +147,28 @@ kids-home-hub/
    pnpm install
    ```
 
-2. **Configure environment**
+2. **Configure Supabase** (New Backend)
    ```bash
-   cp .env.example .env
-   # Edit .env with your Cloudflare credentials
+   cd apps/pwa
+   cp .env.example .env.local
+   # Edit .env.local with your Supabase credentials:
+   # VITE_SUPABASE_URL=https://your-project.supabase.co
+   # VITE_SUPABASE_ANON_KEY=your-anon-key
    ```
 
-3. **Create Cloudflare KV namespace**
-   ```bash
-   cd apps/backend
-   pnpm run kv:create
-   # Copy the namespace ID to wrangler.toml
-   ```
+3. **Run Supabase Migrations**
+   - Open Supabase Dashboard SQL Editor
+   - Run migrations from `/supabase/migrations/` in order
+   - See [SUPABASE_QUICK_START.md](./SUPABASE_QUICK_START.md) for details
 
 4. **Start development**
    ```bash
+   cd apps/pwa
    pnpm dev
-   # Frontend: http://localhost:3000
-   # Backend: http://localhost:8787
+   # Open http://localhost:3000
    ```
+
+**Detailed Setup**: See [SUPABASE_QUICK_START.md](./SUPABASE_QUICK_START.md) for complete instructions
 
 ### Available Scripts
 
@@ -174,25 +194,34 @@ pnpm type-check          # TypeScript check
 pnpm format              # Format all files
 
 # Deployment
-pnpm deploy              # Deploy all
-pnpm deploy:pwa          # Deploy PWA to Cloudflare Pages
-pnpm deploy:worker       # Deploy Worker to Cloudflare Workers
+pnpm build               # Build for production
+# See SUPABASE_DEPLOYMENT.md for deployment instructions
 ```
 
 ## Security
 
 This project follows enterprise-grade security practices:
 
+- **Row Level Security (RLS)** - Database-level authorization enforced by Supabase
+- **Household Data Isolation** - Users can only access their own household data
+- **Role-Based Access Control** - Owner, parent, and viewer roles with granular permissions
+- **Supabase Auth** - Built-in authentication with secure magic links
 - **Content Security Policy** - Prevents XSS attacks
 - **Input Sanitization** - All user input is sanitized
-- **Secure Storage** - Encrypted localStorage with auto-cleanup
-- **Rate Limiting** - API rate limiting to prevent abuse
-- **No XSS Vulnerabilities** - Strict CSP and output encoding
-- **Dependency Audits** - Automated security scanning
+- **Secure Storage** - Session persistence with Supabase Auth
 - **HTTPS Only** - All connections over HTTPS
 - **No Secrets in Code** - Environment variables for sensitive data
+- **Dependency Audits** - Automated security scanning
 
-See [apps/frontend/src/config/security.ts](apps/frontend/src/config/security.ts) for implementation details.
+**Security Features:**
+- 30+ RLS policies protecting all tables
+- Automatic authentication via `auth.uid()`
+- Last owner protection (cannot remove last household owner)
+- Balance validation (prevents negative balances)
+- SQL injection protection (parameterized queries)
+- XSS prevention (output escaping)
+
+See [SUPABASE_MIGRATION_GUIDE.md](./SUPABASE_MIGRATION_GUIDE.md) for security implementation details.
 
 ## Performance
 

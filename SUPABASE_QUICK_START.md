@@ -242,11 +242,104 @@ After migration, verify:
 
 ---
 
+## Post-Migration Testing
+
+After completing the migration, follow these guides:
+
+### 1. Testing Guide
+📖 **Read**: `/Users/Karim/kids-home-hub/SUPABASE_TESTING_GUIDE.md`
+
+Complete step-by-step testing checklist including:
+- Database connectivity tests
+- Authentication flow tests
+- CRUD operation tests
+- RLS policy verification
+- Performance testing
+- Security testing
+
+**Time Required**: 2-3 hours
+
+### 2. Deployment Guide
+🚀 **Read**: `/Users/Karim/kids-home-hub/SUPABASE_DEPLOYMENT.md`
+
+Instructions for deploying to production:
+- Production environment setup
+- Environment variables configuration
+- Cloudflare Pages deployment
+- Production RLS testing
+- Monitoring and rollback procedures
+
+### 3. Final Verification
+✅ **Read**: `/Users/Karim/kids-home-hub/SUPABASE_FINAL_CHECKLIST.md`
+
+Final checklist before going live:
+- All manual steps completed
+- Verification queries passed
+- Performance benchmarks met
+- Security audit complete
+
+---
+
+## Quick Commands Reference
+
+### Development
+```bash
+# Start dev server
+cd /Users/Karim/kids-home-hub/apps/pwa
+pnpm dev
+
+# Run tests
+pnpm test
+
+# Type check
+pnpm type-check
+
+# Build for production
+pnpm build
+```
+
+### Database Operations
+```bash
+# Generate TypeScript types from database
+npx supabase gen types typescript \
+  --project-id qojanjzukgkkrqmnyaai \
+  > src/types/database.types.ts
+
+# Run a specific migration
+# (in Supabase Dashboard SQL Editor)
+
+# Verify migration status
+SELECT * FROM supabase_migrations.schema_migrations;
+```
+
+### Git Workflow
+```bash
+# View changes
+git status
+git diff
+
+# Commit changes
+git add .
+git commit -m "feat: complete Supabase migration Phase 6 - testing and documentation"
+
+# Push to remote
+git push origin feature/supabase-migration
+
+# Create pull request
+gh pr create --title "Supabase Migration - Phase 6 Complete" --body "See SUPABASE_FINAL_CHECKLIST.md"
+```
+
+---
+
 **Ready to Start?** 🚀
 
-1. Run migrations in Supabase Dashboard
-2. Configure auth
-3. Read full migration plan: `SUPABASE_MIGRATION_PLAN.md`
-4. Start coding!
+1. ✅ Run migrations in Supabase Dashboard
+2. ✅ Configure auth settings
+3. ✅ Install Supabase client: `pnpm add @supabase/supabase-js`
+4. ✅ Update environment variables
+5. ✅ Start development server: `pnpm dev`
+6. 📖 Follow testing guide: `SUPABASE_TESTING_GUIDE.md`
+7. 🚀 Deploy using: `SUPABASE_DEPLOYMENT.md`
+8. ✅ Complete final checklist: `SUPABASE_FINAL_CHECKLIST.md`
 
 Good luck! 🎉

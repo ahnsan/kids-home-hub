@@ -27,17 +27,57 @@ import type { User } from '@kids-home-hub/shared';
  */
 export async function sendMagicLink(email: string): Promise<void> {
   try {
+    console.log('[SupabaseAuth] ========== MAGIC LINK REQUEST START ==========');
     console.log('[SupabaseAuth] Sending magic link to:', email);
 
-    const { error } = await supabase.auth.signInWithOtp({
+    // Log current location details
+    console.log('[SupabaseAuth] Location details:', {
+      href: window.location.href,
+      origin: window.location.origin,
+      hostname: window.location.hostname,
+      port: window.location.port,
+      protocol: window.location.protocol,
+    });
+
+    // Dynamically determine redirect URL based on current hostname
+    // This ensures production URLs work even when building locally
+    const getRedirectUrl = (): string => {
+      // If VITE_APP_URL is explicitly set (e.g., in .env.local), use it
+      if (import.meta.env.VITE_APP_URL) {
+        console.log('[SupabaseAuth] Using VITE_APP_URL from env');
+        return `${import.meta.env.VITE_APP_URL}/auth/callback`;
+      }
+
+      // Otherwise, use current origin (works for both localhost and production)
+      console.log('[SupabaseAuth] Using window.location.origin (no VITE_APP_URL set)');
+      return `${window.location.origin}/auth/callback`;
+    };
+
+    const redirectUrl = getRedirectUrl();
+
+    console.log('[SupabaseAuth] Environment check:', {
+      'import.meta.env.VITE_APP_URL': import.meta.env.VITE_APP_URL,
+      'import.meta.env.PROD': import.meta.env.PROD,
+      'import.meta.env.DEV': import.meta.env.DEV,
+      'window.location.origin': window.location.origin,
+      'final redirectUrl': redirectUrl
+    });
+
+    // Build the request payload
+    const requestPayload = {
       email,
       options: {
         // The URL to redirect to after clicking the magic link
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: redirectUrl,
         // Don't create user if they don't exist (set to false to auto-create)
         shouldCreateUser: true,
       },
-    });
+    };
+
+    console.log('[SupabaseAuth] Request payload:', JSON.stringify(requestPayload, null, 2));
+    console.log('[SupabaseAuth] Calling supabase.auth.signInWithOtp...');
+
+    const { error } = await supabase.auth.signInWithOtp(requestPayload);
 
     if (error) {
       console.error('[SupabaseAuth] Failed to send magic link:', error);
@@ -45,6 +85,7 @@ export async function sendMagicLink(email: string): Promise<void> {
     }
 
     console.log('[SupabaseAuth] Magic link sent successfully');
+    console.log('[SupabaseAuth] ========== MAGIC LINK REQUEST END ==========');
   } catch (error) {
     console.error('[SupabaseAuth] sendMagicLink error:', error);
     throw error;
@@ -62,10 +103,23 @@ export async function signInWithOAuth(
   try {
     console.log('[SupabaseAuth] Signing in with OAuth provider:', provider);
 
+    // Dynamically determine redirect URL based on current hostname
+    const getRedirectUrl = (): string => {
+      // If VITE_APP_URL is explicitly set (e.g., in .env.local), use it
+      if (import.meta.env.VITE_APP_URL) {
+        return `${import.meta.env.VITE_APP_URL}/auth/callback`;
+      }
+
+      // Otherwise, use current origin (works for both localhost and production)
+      return `${window.location.origin}/auth/callback`;
+    };
+
+    const redirectUrl = getRedirectUrl();
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: redirectUrl,
       },
     });
 

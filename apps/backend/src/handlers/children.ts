@@ -20,7 +20,7 @@ export async function getChildren(c: Context<{ Bindings: Env }>) {
     const householdResult = await sql`
       SELECT id FROM households
       WHERE id = ${householdId}
-        AND (owner_id = ${user.userId}
+        AND (created_by = ${user.userId}
              OR id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId}
              ))
@@ -67,7 +67,7 @@ export async function createChild(c: Context<{ Bindings: Env }>) {
     const householdResult2 = await sql`
       SELECT id FROM households
       WHERE id = ${householdId}
-        AND (owner_id = ${user.userId}
+        AND (created_by = ${user.userId}
              OR id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId} AND role IN ('owner', 'parent')
              ))
@@ -114,7 +114,7 @@ export async function updateChild(c: Context<{ Bindings: Env }>) {
       FROM children c
       JOIN households h ON h.id = c.household_id
       WHERE c.id = ${childId}
-        AND (h.owner_id = ${user.userId}
+        AND (h.created_by = ${user.userId}
              OR h.id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId} AND role IN ('owner', 'parent')
              ))
@@ -175,7 +175,7 @@ export async function deleteChild(c: Context<{ Bindings: Env }>) {
       USING households h
       WHERE c.id = ${childId}
         AND c.household_id = h.id
-        AND (h.owner_id = ${user.userId}
+        AND (h.created_by = ${user.userId}
              OR h.id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId} AND role IN ('owner', 'parent')
              ))
@@ -215,7 +215,7 @@ export async function createTransaction(c: Context<{ Bindings: Env }>) {
       FROM children c
       JOIN households h ON h.id = c.household_id
       WHERE c.id = ${childId}
-        AND (h.owner_id = ${user.userId}
+        AND (h.created_by = ${user.userId}
              OR h.id IN (
                SELECT household_id FROM household_members WHERE user_id = ${user.userId} AND role IN ('owner', 'parent')
              ))
