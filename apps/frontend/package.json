@@ -42,7 +42,7 @@
     "eslint-plugin-jsx-a11y": "^6.8.0",
     "eslint-plugin-preact": "^0.1.0",
     "eslint-plugin-security": "^2.1.0",
-    "jsdom": "^23.0.1",
+    "jsdom": "^27.2.0",
     "playwright": "^1.40.1",
     "postcss": "^8.4.32",
     "rollup-plugin-visualizer": "^5.11.0",
