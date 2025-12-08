@@ -43,7 +43,7 @@
     "eslint-plugin-preact": "^0.1.0",
     "eslint-plugin-security": "^2.1.0",
     "jsdom": "^23.0.1",
-    "playwright": "^1.40.1",
+    "playwright": "^1.57.0",
     "postcss": "^8.4.32",
     "rollup-plugin-visualizer": "^5.11.0",
     "typescript": "^5.3.3",
