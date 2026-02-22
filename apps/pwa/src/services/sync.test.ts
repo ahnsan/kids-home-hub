@@ -1,6 +1,10 @@
 /**
  * Comprehensive test suite for SyncService
+ *
+ * @vitest-environment happy-dom
  */
+
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SyncService } from './sync';
@@ -16,16 +20,27 @@ vi.mock('../api/client', () => ({
   }
 }));
 
-// Mock auth
-vi.mock('../lib/auth', () => ({
-  isAuthenticated: vi.fn(() => true),
-  getAuthToken: vi.fn(() => 'mock-token')
+// Mock auth store - isAuthenticated and user are Preact signals (hoisted for vi.mock)
+const { mockIsAuthenticated, mockUser } = vi.hoisted(() => ({
+  mockIsAuthenticated: { value: true },
+  mockUser: { value: { id: 'test-user', householdId: 'test-household' } }
+}));
+
+vi.mock('../stores/authStore', () => ({
+  isAuthenticated: mockIsAuthenticated,
+  user: mockUser
 }));
 
 describe('SyncService', () => {
   let syncService: SyncService;
 
   beforeEach(async () => {
+    // Reset navigator.onLine
+    Object.defineProperty(navigator, 'onLine', {
+      writable: true,
+      value: true
+    });
+
     // Clear all data
     await db.syncQueue.clear();
     await db.metadata.clear();
@@ -118,18 +133,39 @@ describe('SyncService', () => {
 
       // Setup local data
       const localChildren: Child[] = [
-        { id: 'child-1', name: 'Alice', avatar: '👧', moneyTotal: 10, pointsTotal: 50, screenTotal: 30 }
+        {
+          id: 'child-1',
+          name: 'Alice',
+          avatar: '👧',
+          moneyTotal: 10,
+          pointsTotal: 50,
+          screenTotal: 30
+        }
       ];
       localStorage.setItem('children', JSON.stringify(localChildren));
 
       // Setup remote data
       const remoteChildren: Child[] = [
-        { id: 'child-1', name: 'Alice', avatar: '👧', moneyTotal: 15, pointsTotal: 60, screenTotal: 40 },
-        { id: 'child-2', name: 'Bob', avatar: '👦', moneyTotal: 5, pointsTotal: 20, screenTotal: 10 }
+        {
+          id: 'child-1',
+          name: 'Alice',
+          avatar: '👧',
+          moneyTotal: 15,
+          pointsTotal: 60,
+          screenTotal: 40
+        },
+        {
+          id: 'child-2',
+          name: 'Bob',
+          avatar: '👦',
+          moneyTotal: 5,
+          pointsTotal: 20,
+          screenTotal: 10
+        }
       ];
 
-      vi.mocked(api.get).mockResolvedValueOnce({
-        json: async () => ({ children: remoteChildren })
+      vi.mocked(api.get).mockReturnValueOnce({
+        json: () => Promise.resolve({ children: remoteChildren })
       } as any);
 
       const result = await syncService.syncChildren();
@@ -141,7 +177,14 @@ describe('SyncService', () => {
 
     it('should return local data if offline', async () => {
       const localChildren: Child[] = [
-        { id: 'child-1', name: 'Alice', avatar: '👧', moneyTotal: 10, pointsTotal: 50, screenTotal: 30 }
+        {
+          id: 'child-1',
+          name: 'Alice',
+          avatar: '👧',
+          moneyTotal: 10,
+          pointsTotal: 50,
+          screenTotal: 30
+        }
       ];
       localStorage.setItem('children', JSON.stringify(localChildren));
 
@@ -163,18 +206,36 @@ describe('SyncService', () => {
 
       // Setup local data
       const localChores: CustomChore[] = [
-        { id: 'chore-1', label: 'Clean room', points: 10, createdAt: Date.now(), updatedAt: Date.now() }
+        {
+          id: 'chore-1',
+          label: 'Clean room',
+          points: 10,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        }
       ];
       localStorage.setItem('custom_chores', JSON.stringify(localChores));
 
       // Setup remote data
       const remoteChores: CustomChore[] = [
-        { id: 'chore-1', label: 'Clean room', points: 15, createdAt: Date.now(), updatedAt: Date.now() + 1000 },
-        { id: 'chore-2', label: 'Do homework', points: 20, createdAt: Date.now(), updatedAt: Date.now() }
+        {
+          id: 'chore-1',
+          label: 'Clean room',
+          points: 15,
+          createdAt: Date.now(),
+          updatedAt: Date.now() + 1000
+        },
+        {
+          id: 'chore-2',
+          label: 'Do homework',
+          points: 20,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        }
       ];
 
-      vi.mocked(api.get).mockResolvedValueOnce({
-        json: async () => ({ chores: remoteChores })
+      vi.mocked(api.get).mockReturnValueOnce({
+        json: () => Promise.resolve({ chores: remoteChores })
       } as any);
 
       const result = await syncService.syncChores();
@@ -187,8 +248,14 @@ describe('SyncService', () => {
 
   describe('needsSync', () => {
     it('should return true if more than 5 minutes since last sync', async () => {
+      // Ensure online
+      Object.defineProperty(navigator, 'onLine', {
+        writable: true,
+        value: true
+      });
+
       // Set last sync time to 6 minutes ago
-      const sixMinutesAgo = Date.now() - (6 * 60 * 1000);
+      const sixMinutesAgo = Date.now() - 6 * 60 * 1000;
       await db.metadata.put({
         key: 'last_sync_time',
         value: sixMinutesAgo,
@@ -197,14 +264,15 @@ describe('SyncService', () => {
 
       // Reload sync service to pick up the metadata
       const newSyncService = new SyncService();
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       expect(newSyncService.needsSync()).toBe(true);
+      newSyncService.stopPeriodicSync();
     });
 
     it('should return false if synced recently', async () => {
       // Set last sync time to 2 minutes ago
-      const twoMinutesAgo = Date.now() - (2 * 60 * 1000);
+      const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
       await db.metadata.put({
         key: 'last_sync_time',
         value: twoMinutesAgo,
@@ -244,7 +312,7 @@ describe('SyncService', () => {
       });
 
       // Set recent sync time
-      const oneMinuteAgo = Date.now() - (1 * 60 * 1000);
+      const oneMinuteAgo = Date.now() - 1 * 60 * 1000;
       await db.metadata.put({
         key: 'last_sync_time',
         value: oneMinuteAgo,
@@ -264,7 +332,7 @@ describe('SyncService', () => {
       });
 
       // Set old sync time
-      const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
+      const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
       await db.metadata.put({
         key: 'last_sync_time',
         value: tenMinutesAgo,
@@ -284,17 +352,30 @@ describe('SyncService', () => {
 
       // Setup local data
       const localChildren: Child[] = [
-        { id: 'child-1', name: 'Alice', avatar: '👧', moneyTotal: 10, pointsTotal: 50, screenTotal: 30 }
+        {
+          id: 'child-1',
+          name: 'Alice',
+          avatar: '👧',
+          moneyTotal: 10,
+          pointsTotal: 50,
+          screenTotal: 30
+        }
       ];
       const localChores: CustomChore[] = [
-        { id: 'chore-1', label: 'Clean room', points: 10, createdAt: Date.now(), updatedAt: Date.now() }
+        {
+          id: 'chore-1',
+          label: 'Clean room',
+          points: 10,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        }
       ];
 
       localStorage.setItem('children', JSON.stringify(localChildren));
       localStorage.setItem('custom_chores', JSON.stringify(localChores));
 
-      vi.mocked(api.post).mockResolvedValueOnce({
-        json: async () => ({ success: true })
+      vi.mocked(api.post).mockReturnValueOnce({
+        json: () => Promise.resolve({ success: true })
       } as any);
 
       await syncService.uploadLocalData();
