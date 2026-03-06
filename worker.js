@@ -305,90 +305,158 @@ async function serveUI(env) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kids Home Hub</title>
 
-<meta name="theme-color" content="#01579b">
+<meta name="theme-color" content="#0369a1">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="/manifest.webmanifest">
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
 <style>
+  :root {
+    --primary: #0369a1;
+    --primary-dark: #075985;
+    --primary-light: #e0f2fe;
+    --success: #16a34a;
+    --success-light: #dcfce7;
+    --danger: #dc2626;
+    --danger-light: #fee2e2;
+    --warning: #f59e0b;
+    --warning-light: #fef3c7;
+    --surface: #ffffff;
+    --background: #f0f9ff;
+    --text-primary: #0c4a6e;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.04);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+  }
+
   * { box-sizing: border-box; }
+
   body {
     margin: 0;
-    background: #f5f7fa;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    color: #1f2933;
+    background: var(--background);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
   }
+
   .app {
     min-height: 100vh;
-    padding: 1rem 1rem 4.5rem;
-    max-width: 960px;
+    padding: 1rem 1rem 5rem;
+    max-width: 480px;
     margin: 0 auto;
   }
+
   header {
     text-align: center;
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
   }
-  header img {
-    max-width: 96px;
-    height: auto;
-    filter: drop-shadow(0 8px 20px rgba(15, 23, 42, 0.15));
+
+  .header-icon {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.75rem;
+    box-shadow: var(--shadow-lg);
+    font-size: 2rem;
   }
+
   h1 {
-    color: #01579b;
-    font-size: 1.7rem;
-    margin: 0.75rem 0 0;
-    letter-spacing: 0.02em;
+    font-family: 'Nunito', sans-serif;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+
+  .header-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
   }
 
   .child-switch {
     display: inline-flex;
-    margin: 0.75rem auto 0.75rem;
-    padding: 0.15rem;
+    margin: 0.5rem auto;
+    padding: 4px;
     border-radius: 999px;
-    background: #e5edf9;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border);
   }
+
   .child-switch-wrapper {
     display: flex;
-    justify-content: centre;
-    margin-bottom: 0.25rem;
+    justify-content: center;
+    margin-bottom: 1rem;
   }
+
   .child-tab {
     border: none;
     background: transparent;
     border-radius: 999px;
-    padding: 0.25rem 0.9rem;
-    font-size: 0.85rem;
-    display: inline-flex;
-    align-items: centre;
-    gap: 0.35rem;
-    cursor: pointer;
-    color: #4b5563;
-  }
-  .child-tab .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: #9ca3af;
-  }
-  .child-tab.active {
-    background: #ffffff;
-    color: #01579b;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.9rem;
     font-weight: 600;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
   }
-  .child-tab.active .dot {
-    background: #01579b;
+
+  .child-tab .avatar-small {
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    object-fit: cover;
+  }
+
+  .child-tab.active {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #ffffff;
+    box-shadow: var(--shadow-md);
   }
 
   .view { display: none; }
-  .view.active { display: block; }
+  .view.active { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
   .view-title {
-    font-size: 1.05rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #102a43;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .view-title .icon {
+    font-size: 1.25rem;
   }
 
   .view-child { display: none; }
@@ -401,154 +469,220 @@ async function serveUI(env) {
   }
 
   .card {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: 1rem;
-    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    padding: 1.25rem;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
   }
+
   .card-header {
     display: flex;
-    align-items: centre;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
+    align-items: center;
+    gap: 0.875rem;
+    margin-bottom: 1rem;
   }
+
   .avatar {
-    width: 48px;
-    height: 48px;
-    border-radius: 999px;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-lg);
     object-fit: cover;
+    box-shadow: var(--shadow-md);
+    border: 2px solid var(--primary-light);
   }
+
   .card-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #102a43;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
   }
+
   .card-subtitle {
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--text-secondary);
+    margin-top: 0.1rem;
   }
 
   .card-balance {
-    margin-bottom: 0.75rem;
+    background: linear-gradient(135deg, var(--primary-light) 0%, #f0f9ff 100%);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(3, 105, 161, 0.1);
   }
+
   .balance-value {
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: #01579b;
+    font-family: 'Nunito', sans-serif;
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
   }
+
   .balance-secondary {
     font-size: 0.85rem;
-    color: #6b7280;
-    margin-top: 0.1rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
   }
 
   .actions-row {
     display: flex;
     gap: 0.5rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.5rem;
     flex-wrap: wrap;
   }
 
   .btn {
-    border-radius: 999px;
-    padding: 0.45rem 0.9rem;
-    font-size: 0.85rem;
+    border-radius: var(--radius-md);
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
     border: none;
     cursor: pointer;
     display: inline-flex;
-    align-items: centre;
-    justify-content: centre;
-    gap: 0.35rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
     white-space: nowrap;
+    transition: all 0.2s ease;
   }
+
   .btn.primary {
-    background: #01579b;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: #ffffff;
+    box-shadow: var(--shadow-sm);
   }
+
   .btn.primary:hover {
-    background: #014170;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
   }
+
+  .btn.primary:active {
+    transform: translateY(0);
+  }
+
   .btn.ghost {
-    background: transparent;
-    color: #01579b;
-    border: 1px solid rgba(1, 87, 155, 0.15);
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid rgba(3, 105, 161, 0.2);
   }
+
+  .btn.ghost:hover {
+    background: rgba(3, 105, 161, 0.15);
+  }
+
   .btn.full {
     width: 100%;
-    margin-top: 0.5rem;
+    margin-top: 0.75rem;
+    padding: 0.75rem;
   }
 
   .inline-form {
-    margin-top: 0.5rem;
-    border-radius: 12px;
-    background: #f3f7ff;
-    padding: 0.75rem;
+    margin-top: 0.75rem;
+    border-radius: var(--radius-lg);
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    padding: 1rem;
     display: none;
+    border: 1px solid var(--border);
   }
+
   .inline-form.open {
     display: block;
+    animation: slideDown 0.2s ease;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .segmented {
     display: inline-flex;
-    border-radius: 999px;
-    background: #e5edf9;
-    padding: 0.15rem;
-    margin-bottom: 0.5rem;
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    padding: 4px;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
   }
+
   .segmented label {
     position: relative;
-    padding: 0.25rem 0.75rem;
-    border-radius: 999px;
-    font-size: 0.8rem;
+    padding: 0.375rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 500;
     cursor: pointer;
-    color: #374151;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
   }
+
   .segmented input {
     position: absolute;
     opacity: 0;
     pointer-events: none;
   }
+
   .segmented input:checked + span {
-    background: #ffffff;
-    color: #01579b;
-    font-weight: 600;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+    background: var(--primary);
+    color: #ffffff;
+    box-shadow: var(--shadow-sm);
   }
+
   .segmented span {
     display: inline-block;
-    border-radius: 999px;
-    padding: 0.2rem 0.7rem;
+    border-radius: var(--radius-sm);
+    padding: 0.375rem 0.875rem;
   }
 
   .form-row {
     display: flex;
     flex-direction: column;
-    margin-bottom: 0.4rem;
-    gap: 0.15rem;
+    margin-bottom: 0.625rem;
+    gap: 0.25rem;
   }
+
   .form-row label {
     font-size: 0.8rem;
-    color: #4b5563;
+    font-weight: 500;
+    color: var(--text-secondary);
   }
+
   .form-row input,
   .form-row select {
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
-    padding: 0.3rem 0.5rem;
-    font-size: 0.85rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    padding: 0.625rem 0.75rem;
+    font-size: 0.9rem;
+    background: var(--surface);
+    transition: all 0.2s ease;
+  }
+
+  .form-row input:focus,
+  .form-row select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-light);
   }
 
   .recent {
-    margin-top: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
   }
+
   .recent-header {
     display: flex;
     justify-content: space-between;
-    align-items: centre;
+    align-items: center;
     font-size: 0.8rem;
-    color: #4b5563;
-    margin-bottom: 0.25rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
   }
 
   .activity-list {
@@ -556,89 +690,130 @@ async function serveUI(env) {
     margin: 0;
     padding: 0;
   }
+
   .activity-item {
-    padding: 0.35rem 0;
+    padding: 0.625rem 0;
   }
+
   .activity-item + .activity-item {
-    border-top: 1px solid rgba(15, 23, 42, 0.06);
+    border-top: 1px solid var(--border);
   }
+
   .activity-main {
     display: flex;
     justify-content: space-between;
-    align-items: centre;
+    align-items: center;
+    gap: 0.5rem;
   }
+
   .activity-title {
-    font-size: 0.85rem;
-    color: #111827;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-weight: 500;
   }
+
   .activity-amount {
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 0.875rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm);
   }
+
   .activity-amount.positive {
-    color: #2e7d32;
+    color: var(--success);
+    background: var(--success-light);
   }
+
   .activity-amount.negative {
-    color: #d32f2f;
+    color: var(--danger);
+    background: var(--danger-light);
   }
+
   .activity-meta {
-    font-size: 0.72rem;
-    color: #6b7280;
-    margin-top: 0.05rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
   }
 
   .chore-list {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    margin: 0.5rem 0;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
   }
+
   .chore-item {
     display: flex;
     justify-content: space-between;
-    align-items: centre;
-    font-size: 0.85rem;
+    align-items: center;
+    padding: 0.75rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
   }
+
+  .chore-item:has(input:checked) {
+    background: var(--success-light);
+    border-color: var(--success);
+  }
+
   .chore-item label {
     display: flex;
-    align-items: centre;
-    gap: 0.4rem;
+    align-items: center;
+    gap: 0.625rem;
     flex: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
   }
+
   .chore-item input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--success);
+    cursor: pointer;
   }
+
   .chore-item .points {
-    font-weight: 600;
-    color: #01579b;
-    margin-left: 0.5rem;
-    font-size: 0.8rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    color: var(--primary);
+    font-size: 0.9rem;
+    background: var(--primary-light);
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-sm);
   }
 
   .small {
-    font-size: 0.75rem;
-    color: #6b7280;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: var(--warning-light);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(245, 158, 11, 0.2);
   }
 
   .progress {
     width: 100%;
-    height: 8px;
+    height: 10px;
     border-radius: 999px;
-    background: #e5edf9;
+    background: var(--border);
     overflow: hidden;
-    margin-top: 0.35rem;
+    margin-top: 0.5rem;
   }
+
   .progress-fill {
     height: 100%;
     border-radius: 999px;
-    background: #01579b;
-    width: 0%;
+    background: linear-gradient(90deg, var(--primary) 0%, var(--success) 100%);
+    transition: width 0.5s ease;
   }
+
   .progress-label {
     font-size: 0.75rem;
-    color: #6b7280;
-    margin-top: 0.25rem;
+    color: var(--text-muted);
+    margin-top: 0.375rem;
   }
 
   .bottom-nav {
@@ -649,50 +824,97 @@ async function serveUI(env) {
     display: flex;
     justify-content: space-around;
     align-items: stretch;
-    background: #ffffff;
-    border-top: 1px solid rgba(15, 23, 42, 0.1);
-    padding: 0.35rem 0.25rem;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
     z-index: 100;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
   }
+
   .nav-btn {
     flex: 1;
     border: none;
     background: transparent;
-    font-size: 0.8rem;
-    padding: 0.25rem 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.5rem 0.25rem;
     display: inline-flex;
     flex-direction: column;
-    align-items: centre;
-    gap: 0.1rem;
-    color: #6b7280;
-    border-radius: 999px;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--text-muted);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    cursor: pointer;
   }
+
   .nav-btn .icon {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     line-height: 1;
   }
+
   .nav-btn.active {
-    color: #01579b;
-    font-weight: 600;
-    background: rgba(1, 87, 155, 0.08);
+    color: var(--primary);
+    background: var(--primary-light);
+  }
+
+  .nav-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 5.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text-primary);
+    color: white;
+    padding: 0.875rem 1.5rem;
+    border-radius: var(--radius-lg);
+    font-size: 0.9rem;
+    font-weight: 500;
+    z-index: 200;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    box-shadow: var(--shadow-xl);
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 1.5rem;
+    color: var(--text-muted);
+  }
+
+  .empty-state .icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
   }
 </style>
 </head>
 <body>
   <div class="app">
     <header>
-      <img src="${simbaURL}" alt="Simba">
-      <h1>Adam & Sami Home Hub</h1>
+      <div class="header-icon">🏠</div>
+      <h1>Kids Home Hub</h1>
+      <p class="header-subtitle">Adam & Sami's Family Dashboard</p>
     </header>
 
     <div class="child-switch-wrapper">
       <div class="child-switch" role="tablist" aria-label="Choose child">
         <button class="child-tab active" data-child="adam" role="tab" aria-selected="true">
-          <span class="dot"></span>
+          <img src="${adamImage}" alt="" class="avatar-small">
           <span>Adam</span>
         </button>
         <button class="child-tab" data-child="sami" role="tab" aria-selected="false">
-          <span class="dot"></span>
+          <img src="${samImage}" alt="" class="avatar-small">
           <span>Sami</span>
         </button>
       </div>
@@ -700,7 +922,7 @@ async function serveUI(env) {
 
     <!-- BANK VIEW -->
     <main id="view-bank" class="view active" role="tabpanel" aria-label="Bank">
-      <div class="view-title">Bank account</div>
+      <div class="view-title"><span class="icon">💰</span> Bank Account</div>
 
       <div class="view-child" data-child="adam">
         <div class="grid">
@@ -717,7 +939,7 @@ async function serveUI(env) {
 
     <!-- POINTS VIEW -->
     <main id="view-points" class="view" role="tabpanel" aria-label="Points">
-      <div class="view-title">Reward points</div>
+      <div class="view-title"><span class="icon">⭐</span> Reward Points</div>
 
       <div class="view-child" data-child="adam">
         <div class="grid">
@@ -734,7 +956,7 @@ async function serveUI(env) {
 
     <!-- CHORES VIEW -->
     <main id="view-chores" class="view" role="tabpanel" aria-label="Chores">
-      <div class="view-title">Weekly chores</div>
+      <div class="view-title"><span class="icon">✨</span> Weekly Chores</div>
 
       <div class="view-child" data-child="adam">
         <div class="grid">
@@ -751,7 +973,7 @@ async function serveUI(env) {
 
     <!-- SCREEN TIME VIEW -->
     <main id="view-screen" class="view" role="tabpanel" aria-label="Screen time">
-      <div class="view-title">Screen time bank</div>
+      <div class="view-title"><span class="icon">📱</span> Screen Time</div>
 
       <div class="view-child" data-child="adam">
         <div class="grid">
@@ -766,6 +988,9 @@ async function serveUI(env) {
       </div>
     </main>
   </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast"></div>
 
   <nav class="bottom-nav" role="tablist" aria-label="Main navigation">
     <button class="nav-btn active" data-view="bank" role="tab" aria-selected="true">
@@ -788,6 +1013,14 @@ async function serveUI(env) {
 
   <script>
     const POINT_TO_MINUTES = ${POINT_TO_MINUTES};
+
+    // Toast notification helper
+    function showToast(message, duration = 2500) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), duration);
+    }
 
     function selectChild(child) {
       const childTabs = document.querySelectorAll('.child-tab');
@@ -890,6 +1123,25 @@ async function serveUI(env) {
         });
       });
     })();
+
+    // Form submission with loading state
+    (function initFormSubmit() {
+      document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+          const btn = form.querySelector('button[type="submit"]');
+          if (btn) {
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:0.5rem;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite;"><circle cx="12" cy="12" r="10" opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg> Saving...</span>';
+          }
+        });
+      });
+    })();
+
+    // Add spin animation
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = '@keyframes spin { to { transform: rotate(360deg); } }';
+    document.head.appendChild(styleSheet);
 
     // Service worker
     if ('serviceWorker' in navigator) {
@@ -1264,8 +1516,8 @@ function pwaManifest() {
     short_name: "KidsHub",
     start_url: "/",
     display: "standalone",
-    background_color: "#f5f7fa",
-    theme_color: "#01579b",
+    background_color: "#f0f9ff",
+    theme_color: "#0369a1",
     icons: [
       {
         src: "/icons/icon-192.png",
