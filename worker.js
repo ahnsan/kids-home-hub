@@ -415,7 +415,7 @@ async function serveUI(env) {
 
   .app {
     min-height: 100vh;
-    padding: 1.25rem 1rem 6rem;
+    padding: 5rem 1rem 6rem;
     max-width: 500px;
     margin: 0 auto;
   }
@@ -435,44 +435,6 @@ async function serveUI(env) {
     z-index: -1;
   }
 
-  header {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    padding: 1rem 0;
-    position: relative;
-  }
-
-  .header-icon {
-    width: 80px;
-    height: 80px;
-    background: var(--gradient-rainbow);
-    border-radius: var(--radius-xl);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto 1rem;
-    box-shadow: var(--shadow-primary);
-    font-size: 2.5rem;
-    position: relative;
-    animation: float 3s ease-in-out infinite;
-  }
-
-  .header-icon::after {
-    content: '';
-    position: absolute;
-    inset: -3px;
-    background: var(--gradient-rainbow);
-    border-radius: inherit;
-    z-index: -1;
-    opacity: 0.4;
-    filter: blur(12px);
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
-  }
-
   h1 {
     font-family: 'Nunito', sans-serif;
     color: var(--text-primary);
@@ -480,102 +442,146 @@ async function serveUI(env) {
     font-weight: 800;
     margin: 0;
     letter-spacing: -0.03em;
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
   }
 
-  .header-subtitle {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin-top: 0.35rem;
-    font-weight: 500;
-  }
-
-  .child-switch {
-    display: inline-flex;
-    margin: 0.5rem auto;
-    padding: 5px;
-    border-radius: 999px;
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    box-shadow: var(--shadow-lg);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-  }
-
+  /* Fixed top navigation for child switching */
   .child-switch-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
     display: flex;
-    justify-content: center;
-    margin-bottom: 1.25rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
   }
 
   .child-tab {
+    flex: 1;
     border: none;
     background: transparent;
-    border-radius: 999px;
-    padding: 0.6rem 1.5rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    display: inline-flex;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: 'Nunito', sans-serif;
+    display: flex;
     align-items: center;
-    gap: 0.6rem;
+    justify-content: center;
+    gap: 0.75rem;
     cursor: pointer;
-    color: var(--text-secondary);
+    color: var(--text-muted);
     transition: all 0.3s var(--ease-spring);
     position: relative;
-    overflow: hidden;
   }
 
-  .child-tab::before {
+  .child-tab::after {
     content: '';
     position: absolute;
-    inset: 0;
-    background: var(--gradient-primary);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    border-radius: inherit;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: transparent;
+    transition: all 0.3s ease;
   }
 
   .child-tab .avatar-small {
-    width: 28px;
-    height: 28px;
+    width: 36px;
+    height: 36px;
     border-radius: 999px;
     object-fit: cover;
-    border: 2px solid transparent;
+    border: 3px solid var(--border);
     transition: all 0.3s ease;
-    position: relative;
-    z-index: 1;
   }
 
-  .child-tab span {
-    position: relative;
-    z-index: 1;
+  /* Adam - Blue theme */
+  .child-tab[data-child="adam"].active {
+    color: #2563eb;
+    background: linear-gradient(180deg, rgba(37, 99, 235, 0.08) 0%, transparent 100%);
   }
 
-  .child-tab.active {
-    color: #ffffff;
-    box-shadow: var(--shadow-primary);
-    transform: scale(1.02);
+  .child-tab[data-child="adam"].active::after {
+    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
   }
 
-  .child-tab.active::before {
-    opacity: 1;
+  .child-tab[data-child="adam"].active .avatar-small {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
   }
 
-  .child-tab.active .avatar-small {
-    border-color: rgba(255, 255, 255, 0.5);
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+  .child-tab[data-child="adam"]:not(.active):hover {
+    background: rgba(59, 130, 246, 0.05);
+    color: #3b82f6;
   }
 
-  .child-tab:not(.active):hover {
-    background: var(--primary-50);
-    color: var(--primary);
+  /* Sami - Green theme */
+  .child-tab[data-child="sami"].active {
+    color: #16a34a;
+    background: linear-gradient(180deg, rgba(22, 163, 74, 0.08) 0%, transparent 100%);
+  }
+
+  .child-tab[data-child="sami"].active::after {
+    background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+  }
+
+  .child-tab[data-child="sami"].active .avatar-small {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.2);
+  }
+
+  .child-tab[data-child="sami"]:not(.active):hover {
+    background: rgba(34, 197, 94, 0.05);
+    color: #22c55e;
   }
 
   .child-tab:active {
     transform: scale(0.98);
+  }
+
+  /* Child-specific theming for cards */
+  body.child-adam {
+    --child-primary: #3b82f6;
+    --child-primary-dark: #2563eb;
+    --child-primary-light: #dbeafe;
+    --child-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    --child-shadow: 0 8px 32px rgba(59, 130, 246, 0.25);
+  }
+
+  body.child-sami {
+    --child-primary: #22c55e;
+    --child-primary-dark: #16a34a;
+    --child-primary-light: #dcfce7;
+    --child-gradient: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    --child-shadow: 0 8px 32px rgba(34, 197, 94, 0.25);
+  }
+
+  /* Apply child theme to cards */
+  body.child-adam .card-balance,
+  body.child-sami .card-balance {
+    background: var(--child-gradient);
+  }
+
+  body.child-adam .card::before,
+  body.child-sami .card::before {
+    background: var(--child-gradient);
+  }
+
+  body.child-adam .btn.primary,
+  body.child-sami .btn.primary {
+    background: var(--child-gradient);
+    box-shadow: var(--shadow-md), var(--child-shadow);
+  }
+
+  body.child-adam .view-title .icon,
+  body.child-sami .view-title .icon {
+    background: var(--child-primary-light);
+  }
+
+  body.child-adam .chore-item .points,
+  body.child-sami .chore-item .points {
+    background: var(--child-primary-light);
+    color: var(--child-primary-dark);
   }
 
   .view { display: none; }
@@ -1359,25 +1365,18 @@ async function serveUI(env) {
 </style>
 </head>
 <body>
-  <div class="app">
-    <header>
-      <div class="header-icon">🏠</div>
-      <h1>Kids Home Hub</h1>
-      <p class="header-subtitle">Adam & Sami's Family Dashboard</p>
-    </header>
+  <div class="child-switch-wrapper" role="tablist" aria-label="Choose child">
+    <button class="child-tab active" data-child="adam" role="tab" aria-selected="true">
+      <img src="${adamImage}" alt="" class="avatar-small">
+      <span>Adam</span>
+    </button>
+    <button class="child-tab" data-child="sami" role="tab" aria-selected="false">
+      <img src="${samImage}" alt="" class="avatar-small">
+      <span>Sami</span>
+    </button>
+  </div>
 
-    <div class="child-switch-wrapper">
-      <div class="child-switch" role="tablist" aria-label="Choose child">
-        <button class="child-tab active" data-child="adam" role="tab" aria-selected="true">
-          <img src="${adamImage}" alt="" class="avatar-small">
-          <span>Adam</span>
-        </button>
-        <button class="child-tab" data-child="sami" role="tab" aria-selected="false">
-          <img src="${samImage}" alt="" class="avatar-small">
-          <span>Sami</span>
-        </button>
-      </div>
-    </div>
+  <div class="app">
 
     <!-- BANK VIEW -->
     <main id="view-bank" class="view active" role="tabpanel" aria-label="Bank">
@@ -1494,6 +1493,10 @@ async function serveUI(env) {
       viewChildren.forEach(vc => {
         vc.classList.toggle('active', vc.dataset.child === child);
       });
+
+      // Update body class for theming
+      document.body.classList.remove('child-adam', 'child-sami');
+      document.body.classList.add('child-' + child);
 
       try {
         if (window.localStorage) {
