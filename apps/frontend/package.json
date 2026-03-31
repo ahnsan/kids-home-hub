@@ -41,7 +41,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-jsx-a11y": "^6.8.0",
     "eslint-plugin-preact": "^0.1.0",
-    "eslint-plugin-security": "^2.1.0",
+    "eslint-plugin-security": "^3.0.1",
     "jsdom": "^23.0.1",
     "playwright": "^1.40.1",
     "postcss": "^8.4.32",
