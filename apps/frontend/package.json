@@ -38,7 +38,7 @@
     "autoprefixer": "^10.4.16",
     "cssnano": "^6.0.2",
     "eslint": "^8.56.0",
-    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsx-a11y": "^6.8.0",
     "eslint-plugin-preact": "^0.1.0",
     "eslint-plugin-security": "^2.1.0",
